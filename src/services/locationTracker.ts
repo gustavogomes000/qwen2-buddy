@@ -11,6 +11,9 @@ const IDB_NAME = 'rastro-db';
 const IDB_STORE = 'locations';
 const IDB_VERSION = 1;
 
+// Background mode: capture every 2 minutes when minimized
+const BG_CAPTURE_MS = 2 * 60_000;
+
 const IP_PROVIDERS = [
   { url: 'https://ipapi.co/json/', extract: (d: any) => ({ lat: d?.latitude, lng: d?.longitude }) },
   { url: 'https://ipwho.is/', extract: (d: any) => ({ lat: d?.latitude, lng: d?.longitude }) },
@@ -171,41 +174,88 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
   }
 }
 
+// ── Wake Lock helper ────────────────────────────────────────────────────────
+class WakeLockManager {
+  private sentinel: any = null;
+
+  async acquire() {
+    if (!isBrowser() || !('wakeLock' in navigator)) return;
+    try {
+      this.sentinel = await (navigator as any).wakeLock.request('screen');
+      this.sentinel?.addEventListener('release', () => { this.sentinel = null; });
+      console.info('[wakeLock] acquired');
+    } catch (e) {
+      console.warn('[wakeLock] failed', e);
+    }
+  }
+
+  release() {
+    this.sentinel?.release?.();
+    this.sentinel = null;
+  }
+
+  get active() { return this.sentinel !== null; }
+
+  // Re-acquire on page re-focus (wake lock releases when tab goes background)
+  async reacquire() {
+    if (document.visibilityState === 'visible' && !this.sentinel) {
+      await this.acquire();
+    }
+  }
+}
+
 // ── Core tracker singleton ──────────────────────────────────────────────────
 class Tracker {
   private running = false;
   private watchId: number | null = null;
-  private intervalId: ReturnType<typeof setInterval> | null = null;
+  private fgIntervalId: ReturnType<typeof setInterval> | null = null;
+  private bgTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private cachedUserId: string | null = null;
   private cachedUserExpiry = 0;
   private lastLat: number | null = null;
   private lastLng: number | null = null;
   private lastPersistAt = 0;
   private syncing = false;
+  private wakeLock = new WakeLockManager();
+  private isBackground = false;
 
   async start() {
     if (!isBrowser() || this.running) return;
     this.running = true;
+    this.isBackground = document.visibilityState === 'hidden';
 
+    await this.wakeLock.acquire();
     this.attachWatch();
     await this.captureOnce(true);
-    this.startLoop();
+    this.startForegroundLoop();
     this.syncUnsynced();
     this.listenLifecycle();
 
-    console.info('[tracker] started');
+    console.info('[tracker] started — wake lock:', this.wakeLock.active ? 'ON' : 'OFF');
   }
 
   stop() {
     this.running = false;
     this.detachWatch();
-    if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
+    this.clearAllTimers();
+    this.wakeLock.release();
     console.info('[tracker] stopped');
   }
 
   restartLoop() {
-    if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; }
-    if (this.running) this.startLoop();
+    this.clearAllTimers();
+    if (this.running) {
+      if (this.isBackground) {
+        this.startBackgroundLoop();
+      } else {
+        this.startForegroundLoop();
+      }
+    }
+  }
+
+  private clearAllTimers() {
+    if (this.fgIntervalId) { clearInterval(this.fgIntervalId); this.fgIntervalId = null; }
+    if (this.bgTimeoutId) { clearTimeout(this.bgTimeoutId); this.bgTimeoutId = null; }
   }
 
   // ── GPS watch ──
@@ -281,12 +331,15 @@ class Tracker {
     const battery = await this.getBattery();
     const emMovimento = this.lastLat !== null && distM(this.lastLat, this.lastLng!, lat, lng) >= 10;
 
+    // Mark background captures
+    const actualFonte = this.isBackground ? `${fonte}_bg` : fonte;
+
     const point: LiveTrackingPoint = {
       usuario_id: userId,
       latitude: lat,
       longitude: lng,
       precisao: accuracy,
-      fonte,
+      fonte: actualFonte,
       bateria_nivel: battery,
       em_movimento: emMovimento,
       criado_em: new Date(now).toISOString(),
@@ -353,23 +406,82 @@ class Tracker {
     }
   }
 
-  // ── Periodic loop ──
-  private startLoop() {
-    this.intervalId = setInterval(() => void this.captureOnce(true), getCaptureIntervalMs());
+  // ── Foreground loop (normal interval) ──
+  private startForegroundLoop() {
+    this.fgIntervalId = setInterval(() => void this.captureOnce(true), getCaptureIntervalMs());
+  }
+
+  // ── Background loop (aggressive, uses recursive setTimeout to survive browser throttling) ──
+  private startBackgroundLoop() {
+    const tick = () => {
+      if (!this.running || !this.isBackground) return;
+      void this.captureOnce(true).then(() => {
+        if (this.running && this.isBackground) {
+          this.bgTimeoutId = setTimeout(tick, BG_CAPTURE_MS);
+        }
+      });
+    };
+    this.bgTimeoutId = setTimeout(tick, BG_CAPTURE_MS);
   }
 
   // ── Lifecycle ──
   private listenLifecycle() {
     if (!isBrowser()) return;
+
     document.addEventListener('visibilitychange', () => {
       if (!this.running) return;
-      if (document.visibilityState === 'visible') {
+
+      if (document.visibilityState === 'hidden') {
+        // App minimized / tab switched
+        this.isBackground = true;
+        this.clearAllTimers();
+        // Immediate capture before going background
+        void this.captureOnce(true);
+        this.startBackgroundLoop();
+        console.info('[tracker] → background mode (2min interval)');
+      } else {
+        // App returned to foreground
+        this.isBackground = false;
+        this.clearAllTimers();
         this.attachWatch();
         void this.captureOnce(true);
         void this.syncUnsynced();
+        void this.wakeLock.reacquire();
+        this.startForegroundLoop();
+        console.info('[tracker] → foreground mode');
       }
     });
+
+    // Also capture on page freeze (mobile browsers freeze tabs)
+    document.addEventListener('freeze', () => {
+      if (this.running) void this.captureOnce(true);
+    });
+
+    // Capture before user navigates away
+    window.addEventListener('beforeunload', () => {
+      if (this.running) void this.captureOnce(true);
+    });
+
+    // Re-acquire wake lock when page regains focus
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        void this.wakeLock.reacquire();
+      }
+    });
+
     window.addEventListener('online', () => void this.syncUnsynced());
+
+    // Listen for SW background location messages
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'BACKGROUND_LOCATION') {
+          const { latitude, longitude, fonte } = event.data;
+          if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            void this.handleCoords(latitude, longitude, 5000, fonte || 'sw_bg', true);
+          }
+        }
+      });
+    }
   }
 
   // ── User ID resolution ──
