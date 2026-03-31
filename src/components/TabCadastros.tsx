@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Users, Shield, Target, ChevronRight, Phone, MapPin, Loader2, Download, UserCheck, Calendar } from 'lucide-react';
+import { Search, Users, Shield, Target, Phone, MapPin, Loader2, Download, UserCheck, Calendar, ChevronDown, Mail, MessageCircle, CreditCard, FileText, Globe } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { formatCPF } from '@/lib/cpf';
 import { toast } from '@/hooks/use-toast';
@@ -16,8 +16,15 @@ interface CadastroUnificado {
   cpf: string | null;
   telefone: string | null;
   whatsapp: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
   zona_eleitoral: string | null;
   secao_eleitoral: string | null;
+  colegio_eleitoral: string | null;
+  municipio_eleitoral: string | null;
+  titulo_eleitor: string | null;
+  observacoes: string | null;
   status: string | null;
   regiao: string | null;
   cadastrado_por_nome: string | null;
@@ -42,6 +49,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const isSuperAdmin = tipoUsuario === 'super_admin';
 
@@ -52,65 +60,50 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
 
     const [lidRes, fisRes, eleRes] = await Promise.all([
       supabase.from('liderancas')
-        .select('id, status, regiao_atuacao, zona_atuacao, criado_em, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)')
+        .select('id, status, regiao_atuacao, zona_atuacao, observacoes, criado_em, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, colegio_eleitoral, municipio_eleitoral, titulo_eleitor, observacoes_gerais), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)')
         .order('criado_em', { ascending: false }),
       supabase.from('fiscais')
-        .select('id, status, zona_fiscal, criado_em, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome)')
+        .select('id, status, zona_fiscal, observacoes, criado_em, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, colegio_eleitoral, municipio_eleitoral, titulo_eleitor, observacoes_gerais), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome)')
         .order('criado_em', { ascending: false }),
       supabase.from('possiveis_eleitores')
-        .select('id, compromisso_voto, criado_em, pessoas(nome, cpf, telefone, whatsapp, zona_eleitoral, secao_eleitoral), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome)')
+        .select('id, compromisso_voto, observacoes, criado_em, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, colegio_eleitoral, municipio_eleitoral, titulo_eleitor, observacoes_gerais), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome)')
         .order('criado_em', { ascending: false }),
     ]);
 
+    const mapPessoa = (item: any, tipo: CadastroUnificado['tipo'], regiao: string | null, status: string | null) => ({
+      id: item.id, tipo,
+      nome: item.pessoas?.nome || '—',
+      cpf: item.pessoas?.cpf || null,
+      telefone: item.pessoas?.telefone || null,
+      whatsapp: item.pessoas?.whatsapp || null,
+      email: item.pessoas?.email || null,
+      instagram: item.pessoas?.instagram || null,
+      facebook: item.pessoas?.facebook || null,
+      zona_eleitoral: item.pessoas?.zona_eleitoral || null,
+      secao_eleitoral: item.pessoas?.secao_eleitoral || null,
+      colegio_eleitoral: item.pessoas?.colegio_eleitoral || null,
+      municipio_eleitoral: item.pessoas?.municipio_eleitoral || null,
+      titulo_eleitor: item.pessoas?.titulo_eleitor || null,
+      observacoes: item.observacoes || item.pessoas?.observacoes_gerais || null,
+      status,
+      regiao,
+      cadastrado_por_nome: item.hierarquia_usuarios?.nome || null,
+      criado_em: item.criado_em,
+    });
+
     if (lidRes.data) {
       for (const l of lidRes.data as any[]) {
-        results.push({
-          id: l.id, tipo: 'lideranca',
-          nome: l.pessoas?.nome || '—',
-          cpf: l.pessoas?.cpf || null,
-          telefone: l.pessoas?.telefone || null,
-          whatsapp: l.pessoas?.whatsapp || null,
-          zona_eleitoral: l.pessoas?.zona_eleitoral || null,
-          secao_eleitoral: l.pessoas?.secao_eleitoral || null,
-          status: l.status,
-          regiao: l.regiao_atuacao || l.zona_atuacao || null,
-          cadastrado_por_nome: l.hierarquia_usuarios?.nome || null,
-          criado_em: l.criado_em,
-        });
+        results.push(mapPessoa(l, 'lideranca', l.regiao_atuacao || l.zona_atuacao || null, l.status));
       }
     }
     if (fisRes.data) {
       for (const f of fisRes.data as any[]) {
-        results.push({
-          id: f.id, tipo: 'fiscal',
-          nome: f.pessoas?.nome || '—',
-          cpf: f.pessoas?.cpf || null,
-          telefone: f.pessoas?.telefone || null,
-          whatsapp: f.pessoas?.whatsapp || null,
-          zona_eleitoral: f.pessoas?.zona_eleitoral || null,
-          secao_eleitoral: f.pessoas?.secao_eleitoral || null,
-          status: f.status,
-          regiao: f.zona_fiscal || null,
-          cadastrado_por_nome: f.hierarquia_usuarios?.nome || null,
-          criado_em: f.criado_em,
-        });
+        results.push(mapPessoa(f, 'fiscal', f.zona_fiscal || null, f.status));
       }
     }
     if (eleRes.data) {
       for (const e of eleRes.data as any[]) {
-        results.push({
-          id: e.id, tipo: 'eleitor',
-          nome: e.pessoas?.nome || '—',
-          cpf: e.pessoas?.cpf || null,
-          telefone: e.pessoas?.telefone || null,
-          whatsapp: e.pessoas?.whatsapp || null,
-          zona_eleitoral: e.pessoas?.zona_eleitoral || null,
-          secao_eleitoral: e.pessoas?.secao_eleitoral || null,
-          status: e.compromisso_voto,
-          regiao: null,
-          cadastrado_por_nome: e.hierarquia_usuarios?.nome || null,
-          criado_em: e.criado_em,
-        });
+        results.push(mapPessoa(e, 'eleitor', null, e.compromisso_voto));
       }
     }
 
@@ -224,61 +217,161 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
               key={`${c.tipo}-${c.id}`}
               className="section-card !py-3 !px-3.5"
             >
-              <div className="flex items-start gap-3">
-                {/* Type indicator */}
-                <div className={`w-9 h-9 rounded-full ${config.color} flex items-center justify-center shrink-0 mt-0.5`}>
-                  <config.icon size={16} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  {/* Name + type badge */}
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
-                    <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${config.color}`}>
-                      {config.label}
-                    </span>
+              {/* Header - always visible */}
+              <button
+                onClick={() => setExpandedId(expandedId === `${c.tipo}-${c.id}` ? null : `${c.tipo}-${c.id}`)}
+                className="w-full text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-full ${config.color} flex items-center justify-center shrink-0 mt-0.5`}>
+                    <config.icon size={17} />
                   </div>
 
-                  {/* Status */}
-                  {c.status && (
-                    <div className="mb-1">
-                      <StatusBadge status={c.status} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
+                      <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${config.color}`}>
+                        {config.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {c.status && <StatusBadge status={c.status} />}
+                      {c.telefone && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <Phone size={9} /> {c.telefone}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground/70">
+                      {c.cadastrado_por_nome && (
+                        <span className="flex items-center gap-0.5">
+                          <UserCheck size={9} /> {c.cadastrado_por_nome}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-0.5">
+                        <Calendar size={9} /> {formatDate(c.criado_em)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-muted-foreground transition-transform mt-1 ${
+                      expandedId === `${c.tipo}-${c.id}` ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+
+              {/* Expanded details */}
+              {expandedId === `${c.tipo}-${c.id}` && (
+                <div className="mt-3 pt-3 border-t border-border space-y-2.5">
+                  {/* Contato */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Contato</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {c.cpf && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <CreditCard size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">{formatCPF(c.cpf)}</span>
+                        </div>
+                      )}
+                      {c.telefone && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Phone size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">{c.telefone}</span>
+                        </div>
+                      )}
+                      {c.whatsapp && c.whatsapp !== c.telefone && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MessageCircle size={11} className="text-emerald-500 shrink-0" />
+                          <span className="truncate">{c.whatsapp}</span>
+                        </div>
+                      )}
+                      {c.email && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Mail size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">{c.email}</span>
+                        </div>
+                      )}
+                      {c.instagram && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Globe size={11} className="text-pink-500 shrink-0" />
+                          <span className="truncate">@{c.instagram.replace('@', '')}</span>
+                        </div>
+                      )}
+                      {c.facebook && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Globe size={11} className="text-blue-500 shrink-0" />
+                          <span className="truncate">{c.facebook}</span>
+                        </div>
+                      )}
+                    </div>
+                    {!c.cpf && !c.telefone && !c.whatsapp && !c.email && !c.instagram && !c.facebook && (
+                      <p className="text-[10px] text-muted-foreground/50 italic">Nenhum contato cadastrado</p>
+                    )}
+                  </div>
+
+                  {/* Dados eleitorais */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Dados Eleitorais</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {c.titulo_eleitor && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <FileText size={11} className="text-muted-foreground shrink-0" />
+                          <span>Título: {c.titulo_eleitor}</span>
+                        </div>
+                      )}
+                      {c.zona_eleitoral && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span>Zona: {c.zona_eleitoral}</span>
+                        </div>
+                      )}
+                      {c.secao_eleitoral && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span>Seção: {c.secao_eleitoral}</span>
+                        </div>
+                      )}
+                      {c.colegio_eleitoral && (
+                        <div className="col-span-2 flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">Colégio: {c.colegio_eleitoral}</span>
+                        </div>
+                      )}
+                      {c.municipio_eleitoral && (
+                        <div className="col-span-2 flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">Município: {c.municipio_eleitoral}</span>
+                        </div>
+                      )}
+                    </div>
+                    {!c.titulo_eleitor && !c.zona_eleitoral && !c.secao_eleitoral && !c.colegio_eleitoral && !c.municipio_eleitoral && (
+                      <p className="text-[10px] text-muted-foreground/50 italic">Nenhum dado eleitoral</p>
+                    )}
+                  </div>
+
+                  {/* Região / Observações */}
+                  {(c.regiao || c.observacoes) && (
+                    <div>
+                      {c.regiao && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground mb-1">
+                          <MapPin size={11} className="text-primary shrink-0" />
+                          <span>Região: {c.regiao}</span>
+                        </div>
+                      )}
+                      {c.observacoes && (
+                        <div className="bg-muted/30 rounded-lg px-2.5 py-2 text-xs text-muted-foreground italic">
+                          "{c.observacoes}"
+                        </div>
+                      )}
                     </div>
                   )}
-
-                  {/* Details grid */}
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-                    {c.cpf && (
-                      <span>CPF: {formatCPF(c.cpf)}</span>
-                    )}
-                    {c.telefone && (
-                      <span className="flex items-center gap-0.5">
-                        <Phone size={9} /> {c.telefone}
-                      </span>
-                    )}
-                    {c.zona_eleitoral && (
-                      <span>Zona: {c.zona_eleitoral}{c.secao_eleitoral ? ` / Seção: ${c.secao_eleitoral}` : ''}</span>
-                    )}
-                    {c.regiao && (
-                      <span className="flex items-center gap-0.5">
-                        <MapPin size={9} /> {c.regiao}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Footer: agent + date */}
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground/70">
-                    {c.cadastrado_por_nome && (
-                      <span className="flex items-center gap-0.5">
-                        <UserCheck size={9} /> {c.cadastrado_por_nome}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-0.5">
-                      <Calendar size={9} /> {formatDate(c.criado_em)}
-                    </span>
-                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
