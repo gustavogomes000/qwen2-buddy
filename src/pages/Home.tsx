@@ -7,6 +7,7 @@ import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
 import TabRede from '@/components/TabRede';
 import TabPerfil from '@/components/TabPerfil';
+import PainelLocalizacao from '@/components/PainelLocalizacao';
 
 export default function Home() {
   const { isAdmin, tipoUsuario, usuario } = useAuth();
@@ -35,6 +36,7 @@ export default function Home() {
     if (activeTab === 'eleitores') return isAdmin ? 'Todos os Eleitores' : 'Meus Eleitores';
     if (activeTab === 'cadastros') return isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros';
     if (activeTab === 'rede') return 'Rede por Suplente';
+    if (activeTab === 'rastreamento') return 'Rastreamento';
     if (activeTab === 'perfil') return 'Perfil';
     return '';
   };
@@ -57,6 +59,7 @@ export default function Home() {
           {activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
           {activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
           {activeTab === 'rede' && <TabRede />}
+          {activeTab === 'rastreamento' && <PainelLocalizacao />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
       </div>

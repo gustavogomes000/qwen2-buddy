@@ -1,8 +1,8 @@
-import { PlusCircle, List, UserCircle, BarChart3, Shield, Users, Network } from 'lucide-react';
+import { PlusCircle, List, UserCircle, BarChart3, Shield, Users, Network, MapPin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rede' | 'perfil';
+export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rede' | 'perfil' | 'rastreamento';
 
 interface Props {
   active: TabId;
@@ -43,6 +43,11 @@ export default function BottomNav({ active, onChange }: Props) {
     // Admin sees full network view by suplente
     if (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador') {
       tabs.push({ id: 'rede', icon: Network, label: 'Rede' });
+    }
+
+    // Super admin sees location tracking
+    if (tipoUsuario === 'super_admin') {
+      tabs.push({ id: 'rastreamento', icon: MapPin, label: 'Rastro' });
     }
 
     tabs.push({ id: 'perfil', icon: UserCircle, label: 'Perfil' });

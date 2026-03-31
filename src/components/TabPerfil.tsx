@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth, TipoUsuario } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { LogOut, Shield, User, UserPlus, Loader2, Crown, Users, Eye, Copy, X, Pencil, Trash2 } from 'lucide-react';
+import { LogOut, Shield, User, UserPlus, Loader2, Crown, Users, Eye, Copy, X, Pencil, Trash2, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import ModulosUsuario from '@/components/ModulosUsuario';
 
 const tipoLabels: Record<TipoUsuario, string> = {
   super_admin: 'Super Admin',
@@ -51,6 +52,7 @@ function UsuarioModal({ info, onClose, onUpdated }: { info: UsuarioModalInfo; on
   const [salvando, setSalvando] = useState(false);
   const [deletando, setDeletando] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showModulos, setShowModulos] = useState(false);
 
   const copiar = (texto: string, label: string) => {
     navigator.clipboard.writeText(texto);
@@ -140,6 +142,17 @@ function UsuarioModal({ info, onClose, onUpdated }: { info: UsuarioModalInfo; on
             Anote essas credenciais! A senha não poderá ser visualizada novamente.
           </p>
         )}
+
+        {/* Modules toggle */}
+        <button
+          onClick={() => setShowModulos(!showModulos)}
+          className="w-full flex items-center gap-2 p-2.5 rounded-xl border border-border bg-muted/50 text-sm font-medium text-foreground active:scale-[0.98] transition-all"
+        >
+          <Settings size={14} className="text-primary" />
+          Módulos / Permissões
+          <span className="ml-auto text-xs text-muted-foreground">{showModulos ? '▲' : '▼'}</span>
+        </button>
+        {showModulos && <ModulosUsuario usuarioId={info.usuario.id} />}
 
         <div className="flex gap-2">
           <button
