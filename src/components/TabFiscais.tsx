@@ -32,7 +32,11 @@ interface FiscalRow {
   criado_em: string;
   pessoas: {
     nome: string; cpf: string | null; telefone: string | null; whatsapp: string | null;
-    email: string | null; zona_eleitoral: string | null; secao_eleitoral: string | null;
+    email: string | null; instagram: string | null; facebook: string | null;
+    zona_eleitoral: string | null; secao_eleitoral: string | null;
+    titulo_eleitor: string | null; municipio_eleitoral: string | null;
+    uf_eleitoral: string | null; colegio_eleitoral: string | null;
+    endereco_colegio: string | null; situacao_titulo: string | null;
   };
 }
 
