@@ -217,61 +217,161 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
               key={`${c.tipo}-${c.id}`}
               className="section-card !py-3 !px-3.5"
             >
-              <div className="flex items-start gap-3">
-                {/* Type indicator */}
-                <div className={`w-9 h-9 rounded-full ${config.color} flex items-center justify-center shrink-0 mt-0.5`}>
-                  <config.icon size={16} />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  {/* Name + type badge */}
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
-                    <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${config.color}`}>
-                      {config.label}
-                    </span>
+              {/* Header - always visible */}
+              <button
+                onClick={() => setExpandedId(expandedId === `${c.tipo}-${c.id}` ? null : `${c.tipo}-${c.id}`)}
+                className="w-full text-left"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-full ${config.color} flex items-center justify-center shrink-0 mt-0.5`}>
+                    <config.icon size={17} />
                   </div>
 
-                  {/* Status */}
-                  {c.status && (
-                    <div className="mb-1">
-                      <StatusBadge status={c.status} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
+                      <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${config.color}`}>
+                        {config.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {c.status && <StatusBadge status={c.status} />}
+                      {c.telefone && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <Phone size={9} /> {c.telefone}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground/70">
+                      {c.cadastrado_por_nome && (
+                        <span className="flex items-center gap-0.5">
+                          <UserCheck size={9} /> {c.cadastrado_por_nome}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-0.5">
+                        <Calendar size={9} /> {formatDate(c.criado_em)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <ChevronDown
+                    size={16}
+                    className={`shrink-0 text-muted-foreground transition-transform mt-1 ${
+                      expandedId === `${c.tipo}-${c.id}` ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+
+              {/* Expanded details */}
+              {expandedId === `${c.tipo}-${c.id}` && (
+                <div className="mt-3 pt-3 border-t border-border space-y-2.5">
+                  {/* Contato */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Contato</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {c.cpf && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <CreditCard size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">{formatCPF(c.cpf)}</span>
+                        </div>
+                      )}
+                      {c.telefone && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Phone size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">{c.telefone}</span>
+                        </div>
+                      )}
+                      {c.whatsapp && c.whatsapp !== c.telefone && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MessageCircle size={11} className="text-emerald-500 shrink-0" />
+                          <span className="truncate">{c.whatsapp}</span>
+                        </div>
+                      )}
+                      {c.email && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Mail size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">{c.email}</span>
+                        </div>
+                      )}
+                      {c.instagram && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Globe size={11} className="text-pink-500 shrink-0" />
+                          <span className="truncate">@{c.instagram.replace('@', '')}</span>
+                        </div>
+                      )}
+                      {c.facebook && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <Globe size={11} className="text-blue-500 shrink-0" />
+                          <span className="truncate">{c.facebook}</span>
+                        </div>
+                      )}
+                    </div>
+                    {!c.cpf && !c.telefone && !c.whatsapp && !c.email && !c.instagram && !c.facebook && (
+                      <p className="text-[10px] text-muted-foreground/50 italic">Nenhum contato cadastrado</p>
+                    )}
+                  </div>
+
+                  {/* Dados eleitorais */}
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Dados Eleitorais</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {c.titulo_eleitor && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <FileText size={11} className="text-muted-foreground shrink-0" />
+                          <span>Título: {c.titulo_eleitor}</span>
+                        </div>
+                      )}
+                      {c.zona_eleitoral && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span>Zona: {c.zona_eleitoral}</span>
+                        </div>
+                      )}
+                      {c.secao_eleitoral && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span>Seção: {c.secao_eleitoral}</span>
+                        </div>
+                      )}
+                      {c.colegio_eleitoral && (
+                        <div className="col-span-2 flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">Colégio: {c.colegio_eleitoral}</span>
+                        </div>
+                      )}
+                      {c.municipio_eleitoral && (
+                        <div className="col-span-2 flex items-center gap-1.5 text-xs text-foreground bg-muted/40 rounded-lg px-2.5 py-1.5">
+                          <MapPin size={11} className="text-muted-foreground shrink-0" />
+                          <span className="truncate">Município: {c.municipio_eleitoral}</span>
+                        </div>
+                      )}
+                    </div>
+                    {!c.titulo_eleitor && !c.zona_eleitoral && !c.secao_eleitoral && !c.colegio_eleitoral && !c.municipio_eleitoral && (
+                      <p className="text-[10px] text-muted-foreground/50 italic">Nenhum dado eleitoral</p>
+                    )}
+                  </div>
+
+                  {/* Região / Observações */}
+                  {(c.regiao || c.observacoes) && (
+                    <div>
+                      {c.regiao && (
+                        <div className="flex items-center gap-1.5 text-xs text-foreground mb-1">
+                          <MapPin size={11} className="text-primary shrink-0" />
+                          <span>Região: {c.regiao}</span>
+                        </div>
+                      )}
+                      {c.observacoes && (
+                        <div className="bg-muted/30 rounded-lg px-2.5 py-2 text-xs text-muted-foreground italic">
+                          "{c.observacoes}"
+                        </div>
+                      )}
                     </div>
                   )}
-
-                  {/* Details grid */}
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
-                    {c.cpf && (
-                      <span>CPF: {formatCPF(c.cpf)}</span>
-                    )}
-                    {c.telefone && (
-                      <span className="flex items-center gap-0.5">
-                        <Phone size={9} /> {c.telefone}
-                      </span>
-                    )}
-                    {c.zona_eleitoral && (
-                      <span>Zona: {c.zona_eleitoral}{c.secao_eleitoral ? ` / Seção: ${c.secao_eleitoral}` : ''}</span>
-                    )}
-                    {c.regiao && (
-                      <span className="flex items-center gap-0.5">
-                        <MapPin size={9} /> {c.regiao}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Footer: agent + date */}
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground/70">
-                    {c.cadastrado_por_nome && (
-                      <span className="flex items-center gap-0.5">
-                        <UserCheck size={9} /> {c.cadastrado_por_nome}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-0.5">
-                      <Calendar size={9} /> {formatDate(c.criado_em)}
-                    </span>
-                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
