@@ -7,6 +7,7 @@ export type CaptureIntervalMinutes = (typeof CAPTURE_INTERVALS)[number];
 const DEFAULT_CAPTURE_INTERVAL: CaptureIntervalMinutes = 5;
 const CAPTURE_INTERVAL_STORAGE_KEY = 'rastro-capture-interval';
 const MOVEMENT_THRESHOLD_METERS = 50;
+const USER_ID_CACHE_TTL_MS = 5 * 60_000;
 
 // ─── STATE ─────────────────────────────────────────────────────────
 let watchId: number | null = null;
@@ -19,6 +20,17 @@ let backgroundLocationHandler: ((event: Event) => void) | null = null;
 let visibilityHandler: (() => void) | null = null;
 let cachedUsuarioId: string | null = null;
 let cachedUsuarioIdExpiry = 0;
+
+function resetCachedUsuarioId() {
+  cachedUsuarioId = null;
+  cachedUsuarioIdExpiry = 0;
+}
+
+function resetLastSentState() {
+  lastSentTimestamp = 0;
+  lastSentLat = 0;
+  lastSentLng = 0;
+}
 
 // ─── INTERVAL HELPERS ──────────────────────────────────────────────
 function isValidCaptureInterval(value: unknown): value is CaptureIntervalMinutes {
@@ -45,15 +57,42 @@ export async function setCaptureIntervalMinutes(minutes: CaptureIntervalMinutes)
 }
 
 // ─── USUARIO ID (cached for 5min) ─────────────────────────────────
-async function getUsuarioId(): Promise<string | null> {
+async function getUsuarioId(forceRefresh = false): Promise<string | null> {
   const now = Date.now();
-  if (cachedUsuarioId && now < cachedUsuarioIdExpiry) return cachedUsuarioId;
-  try {
-    const { data } = await supabase.rpc('get_meu_usuario_id');
-    cachedUsuarioId = data as string | null;
-    cachedUsuarioIdExpiry = now + 5 * 60_000;
+
+  if (!forceRefresh && cachedUsuarioId && now < cachedUsuarioIdExpiry) {
     return cachedUsuarioId;
-  } catch {
+  }
+
+  try {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      resetCachedUsuarioId();
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('hierarquia_usuarios')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .eq('ativo', true)
+      .maybeSingle();
+
+    if (error || !data?.id) {
+      resetCachedUsuarioId();
+      console.warn('[locationTracker] usuário logado sem vínculo válido para rastreamento', error?.message ?? user.id);
+      return null;
+    }
+
+    cachedUsuarioId = data.id;
+    cachedUsuarioIdExpiry = now + USER_ID_CACHE_TTL_MS;
+    return cachedUsuarioId;
+  } catch (error) {
+    console.error('[locationTracker] falha ao resolver usuário do rastreamento', error);
     return cachedUsuarioId;
   }
 }
@@ -99,19 +138,18 @@ async function sendLocation(
     }
   }
 
-  const usuarioId = await getUsuarioId();
-  if (!usuarioId) return;
+  let usuarioId = await getUsuarioId();
+  if (!usuarioId) {
+    console.warn('[locationTracker] envio ignorado: usuário não encontrado para rastreamento');
+    return false;
+  }
 
   const bateria = await getBatteryLevel();
   const emMovimento = lastSentLat !== 0 && lastSentLng !== 0
     ? distanceMeters(lastSentLat, lastSentLng, lat, lng) > 10
     : false;
 
-  lastSentTimestamp = now;
-  lastSentLat = lat;
-  lastSentLng = lng;
-
-  await supabase.from('localizacoes_usuarios').insert({
+  const payload = {
     usuario_id: usuarioId,
     latitude: lat,
     longitude: lng,
@@ -120,7 +158,35 @@ async function sendLocation(
     user_agent: navigator.userAgent,
     bateria_nivel: bateria,
     em_movimento: emMovimento,
-  } as any);
+  } as any;
+
+  let { error } = await supabase.from('localizacoes_usuarios').insert(payload);
+
+  if (error) {
+    console.warn('[locationTracker] primeira tentativa falhou, renovando vínculo do usuário', error.message);
+    resetCachedUsuarioId();
+
+    const refreshedUsuarioId = await getUsuarioId(true);
+    if (refreshedUsuarioId) {
+      usuarioId = refreshedUsuarioId;
+      const retry = await supabase.from('localizacoes_usuarios').insert({
+        ...payload,
+        usuario_id: refreshedUsuarioId,
+      });
+      error = retry.error;
+    }
+  }
+
+  if (error) {
+    console.error('[locationTracker] erro ao salvar localização', error);
+    return false;
+  }
+
+  lastSentTimestamp = now;
+  lastSentLat = lat;
+  lastSentLng = lng;
+  console.info('[locationTracker] localização salva', { usuarioId, fonte, precisao: accuracy });
+  return true;
 }
 
 // ─── GPS CAPTURE ───────────────────────────────────────────────────
@@ -132,7 +198,7 @@ function captureGPS(force = false) {
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      sendLocation(
+      void sendLocation(
         pos.coords.latitude,
         pos.coords.longitude,
         pos.coords.accuracy,
@@ -142,7 +208,7 @@ function captureGPS(force = false) {
     },
     () => {
       // GPS denied/failed → fallback to IP
-      captureByIP(force);
+      void captureByIP(force);
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
   );
@@ -233,18 +299,20 @@ async function updatePeriodicSyncInterval() {
 }
 
 export function registerBackgroundSync() {
-  if ('serviceWorker' in navigator && 'SyncManager' in window) {
-    navigator.serviceWorker.ready.then((reg) => {
-      return Promise.allSettled([
-        (reg as any).sync?.register('sync-location'),
-        'periodicSync' in reg
-          ? (reg as any).periodicSync?.register('location-sync', {
-              minInterval: getCaptureIntervalMs(),
-            })
-          : Promise.resolve(),
-      ]);
-    }).catch(() => {});
-  }
+  if (!('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.ready.then((reg) => {
+    return Promise.allSettled([
+      typeof (reg as any).sync?.register === 'function'
+        ? (reg as any).sync.register('sync-location')
+        : Promise.resolve(),
+      typeof (reg as any).periodicSync?.register === 'function'
+        ? (reg as any).periodicSync.register('location-sync', {
+            minInterval: getCaptureIntervalMs(),
+          })
+        : Promise.resolve(),
+    ]);
+  }).catch(() => {});
 }
 
 // ─── START / STOP ──────────────────────────────────────────────────
@@ -262,14 +330,14 @@ export function startLocationTracking() {
   if (navigator.geolocation) {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        sendLocation(
+        void sendLocation(
           pos.coords.latitude,
           pos.coords.longitude,
           pos.coords.accuracy,
           'gps'
         );
       },
-      () => captureByIP(),
+      () => { void captureByIP(); },
       { enableHighAccuracy: true, maximumAge: 60000 }
     );
   }
@@ -292,4 +360,6 @@ export function stopLocationTracking() {
 
   unregisterBackgroundLocationListener();
   unregisterVisibilityListener();
+  resetCachedUsuarioId();
+  resetLastSentState();
 }
