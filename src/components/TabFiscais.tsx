@@ -231,7 +231,13 @@ export default function TabFiscais({ refreshKey, onSaved }: Props) {
               CPF {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin" />}{cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
             <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={`${inputCls} ${cpfBorderCls}`} maxLength={14} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-xs text-emerald-600 font-medium">✅ {cpfNomePessoa}</p>}
+            {cpfStatus === 'confirmado' && cpfNomePessoa && !cpfDuplicado.isDuplicate && <p className="text-xs text-emerald-600 font-medium">✅ {cpfNomePessoa}</p>}
+            {cpfDuplicado.isDuplicate && (
+              <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/30">
+                <p className="text-xs font-semibold text-destructive">⚠️ Você já cadastrou este CPF como: {cpfDuplicado.tipos.join(', ')}</p>
+                <p className="text-[10px] text-destructive/80 mt-0.5">Não é possível cadastrar o mesmo CPF duas vezes pelo mesmo usuário.</p>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Telefone</label><input type="tel" value={form.telefone} onChange={e => update('telefone', e.target.value)} className={inputCls} /></div>
