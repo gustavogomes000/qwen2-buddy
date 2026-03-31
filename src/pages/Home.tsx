@@ -56,6 +56,7 @@ export default function Home() {
           {activeTab === 'rede' && <TabRede />}
           {activeTab === 'hierarquia' && <TabHierarquia />}
           {activeTab === 'rastreamento' && <PainelLocalizacao />}
+          {activeTab === 'criar_usuarios' && <TabCriarUsuarios />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
       </div>
