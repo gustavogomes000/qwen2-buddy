@@ -61,8 +61,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [statusFilter, setStatusFilter] = useState('Todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<LiderancaRow | null>(null);
-  const [agentes, setAgentes] = useState<{ id: string; nome: string }[]>([]);
-  const [agenteFilter, setAgenteFilter] = useState('');
 
   // Form state
   const [saving, setSaving] = useState(false);
@@ -90,12 +88,8 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
   useEffect(() => { fetchData(); }, [fetchData, refreshKey]);
 
+
   useEffect(() => {
-    if (isAdmin) {
-      supabase.from('hierarquia_usuarios').select('id, nome').in('tipo', ['suplente', 'lideranca', 'coordenador']).then(({ data }) => {
-        if (data) setAgentes(data);
-      });
-    }
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
       .then(({ data }) => {
         if (data) setLiderancasExistentes(data.map((l: any) => ({ id: l.id, nome: l.pessoas?.nome || '—' })));
@@ -237,7 +231,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
   const filtered = data.filter(l => {
     if (statusFilter !== 'Todas' && l.status !== statusFilter) return false;
-    if (agenteFilter && l.cadastrado_por !== agenteFilter) return false;
+    
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const nome = l.pessoas?.nome?.toLowerCase() || '';
