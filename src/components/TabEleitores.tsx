@@ -322,8 +322,14 @@ export default function TabEleitores({ refreshKey, onSaved }: Props) {
               {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
             <input type="text" inputMode="numeric" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" className={`${inputCls} ${cpfBorderCls}`} maxLength={14} />
-            {cpfStatus === 'confirmado' && cpfNomePessoa && (
+            {cpfStatus === 'confirmado' && cpfNomePessoa && !cpfDuplicado.isDuplicate && (
               <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ Pessoa encontrada: {cpfNomePessoa}</p>
+            )}
+            {cpfDuplicado.isDuplicate && (
+              <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/30">
+                <p className="text-xs font-semibold text-destructive">⚠️ Você já cadastrou este CPF como: {cpfDuplicado.tipos.join(', ')}</p>
+                <p className="text-[10px] text-destructive/80 mt-0.5">Não é possível cadastrar o mesmo CPF duas vezes pelo mesmo usuário.</p>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
