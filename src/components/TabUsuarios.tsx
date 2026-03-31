@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
 import {
   Loader2, UserPlus, Users, User, CheckCircle2, Search, Eye, EyeOff,
-  ChevronRight, ArrowLeft, Shield, Pencil, Trash2, KeyRound, Save
+  ChevronRight, ArrowLeft, Shield, Pencil, Trash2, KeyRound, Save, Link2
 } from 'lucide-react';
 
 interface SuplenteExterno {
@@ -14,6 +14,16 @@ interface SuplenteExterno {
   regiao_atuacao: string | null;
   telefone: string | null;
   partido: string | null;
+}
+
+interface LiderancaExterna {
+  id: string;
+  pessoa_id: string;
+  status: string | null;
+  tipo_lideranca: string | null;
+  regiao_atuacao: string | null;
+  suplente_id: string | null;
+  pessoas: { id: string; nome: string; telefone: string | null; whatsapp: string | null } | null;
 }
 
 interface HierarchyUser {
@@ -27,10 +37,18 @@ interface HierarchyUser {
 
 type SubTab = 'suplentes' | 'avulso' | 'gerenciar';
 
+const MODULOS_INLINE = [
+  { id: 'cadastrar_liderancas', label: '👥 Cadastrar Lideranças' },
+  { id: 'cadastrar_fiscais', label: '🛡️ Cadastrar Fiscais' },
+  { id: 'cadastrar_eleitores', label: '🎯 Cadastrar Eleitores' },
+  { id: 'ver_rede', label: '🌐 Ver Rede Completa' },
+];
+
 export default function TabUsuarios() {
   const { isAdmin } = useAuth();
   const [subTab, setSubTab] = useState<SubTab>('gerenciar');
   const [suplentes, setSuplentes] = useState<SuplenteExterno[]>([]);
+  const [liderancas, setLiderancas] = useState<LiderancaExterna[]>([]);
   const [usuarios, setUsuarios] = useState<HierarchyUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -43,6 +61,11 @@ export default function TabUsuarios() {
   const [tipoUsuario, setTipoUsuario] = useState<string>('suplente');
   const [superiorId, setSuperiorId] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Avulso: link to suplente/liderança
+  const [linkedSuplenteId, setLinkedSuplenteId] = useState<string | null>(null);
+  const [linkSearch, setLinkSearch] = useState('');
+  const [selectedModulos, setSelectedModulos] = useState<Set<string>>(new Set());
 
   // Edit user state
   const [editing, setEditing] = useState<HierarchyUser | null>(null);
@@ -57,11 +80,13 @@ export default function TabUsuarios() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [supRes, usrRes] = await Promise.all([
+    const [supRes, lidRes, usrRes] = await Promise.all([
       supabase.functions.invoke('buscar-suplentes'),
+      supabase.functions.invoke('buscar-liderancas-externo'),
       supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id, ativo').eq('ativo', true).order('nome'),
     ]);
     if (!supRes.error && supRes.data) setSuplentes(supRes.data);
+    if (!lidRes.error && lidRes.data) setLiderancas(lidRes.data);
     setUsuarios((usrRes.data || []) as HierarchyUser[]);
     setLoading(false);
   }, []);
@@ -88,6 +113,19 @@ export default function TabUsuarios() {
     return usuarios.filter(u => u.nome.toLowerCase().includes(q));
   }, [usuarios, search]);
 
+  // Search results for linking suplente/liderança in avulso form
+  const linkSuplentesFiltered = useMemo(() => {
+    if (!linkSearch) return [];
+    const q = linkSearch.toLowerCase();
+    return suplentes.filter(s => s.nome.toLowerCase().includes(q)).slice(0, 5);
+  }, [suplentes, linkSearch]);
+
+  const linkLiderancasFiltered = useMemo(() => {
+    if (!linkSearch) return [];
+    const q = linkSearch.toLowerCase();
+    return liderancas.filter(l => (l.pessoas?.nome || '').toLowerCase().includes(q)).slice(0, 5);
+  }, [liderancas, linkSearch]);
+
   const openCreateSuplente = (sup: SuplenteExterno) => {
     setCreating({ tipo: 'suplente', suplenteId: sup.id, nomeDefault: sup.nome });
     setNome(sup.nome);
@@ -95,6 +133,9 @@ export default function TabUsuarios() {
     setTipoUsuario('suplente');
     setSuperiorId('');
     setShowSenha(false);
+    setLinkedSuplenteId(sup.id);
+    setLinkSearch('');
+    setSelectedModulos(new Set());
   };
 
   const openCreateAvulso = () => {
@@ -104,6 +145,9 @@ export default function TabUsuarios() {
     setTipoUsuario('suplente');
     setSuperiorId('');
     setShowSenha(false);
+    setLinkedSuplenteId(null);
+    setLinkSearch('');
+    setSelectedModulos(new Set());
   };
 
   const handleCreate = async () => {
@@ -121,11 +165,22 @@ export default function TabUsuarios() {
       };
       if (creating.tipo === 'suplente' && creating.suplenteId) {
         payload.suplente_id = creating.suplenteId;
+      } else if (linkedSuplenteId && tipoUsuario === 'suplente') {
+        payload.suplente_id = linkedSuplenteId;
       }
 
       const { data, error } = await supabase.functions.invoke('criar-usuario', { body: payload });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
+
+      // Save selected modules
+      if (data?.hierarquia_id && selectedModulos.size > 0) {
+        const modulosInsert = Array.from(selectedModulos).map(modulo => ({
+          usuario_id: data.hierarquia_id,
+          modulo,
+        }));
+        await (supabase as any).from('usuario_modulos').insert(modulosInsert);
+      }
 
       toast({ title: '✅ Usuário criado!', description: `${nome} pode acessar o sistema` });
       setCreating(null);
@@ -183,6 +238,15 @@ export default function TabUsuarios() {
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally { setEditSaving(false); }
+  };
+
+  const toggleModuloInline = (modulo: string) => {
+    setSelectedModulos(prev => {
+      const next = new Set(prev);
+      if (next.has(modulo)) next.delete(modulo);
+      else next.add(modulo);
+      return next;
+    });
   };
 
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
@@ -310,6 +374,9 @@ export default function TabUsuarios() {
 
   // CREATE VIEW
   if (creating) {
+    const selectedSuplente = linkedSuplenteId ? suplentes.find(s => s.id === linkedSuplenteId) : null;
+    const showLinkSection = creating.tipo === 'avulso' && (tipoUsuario === 'suplente' || tipoUsuario === 'lideranca');
+
     return (
       <div className="space-y-4 pb-24">
         <button onClick={() => setCreating(null)} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
@@ -322,16 +389,44 @@ export default function TabUsuarios() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">
-                {creating.tipo === 'suplente' ? 'Criar Acesso (Suplente)' : 'Criar Usuário Avulso'}
+                {creating.tipo === 'suplente' ? 'Criar Acesso (Suplente)' : 'Novo Usuário'}
               </h2>
               {creating.nomeDefault && <p className="text-xs text-muted-foreground">{creating.nomeDefault}</p>}
             </div>
           </div>
           <div className="space-y-3">
+            {/* Tipo de usuário */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Tipo de usuário</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { value: 'suplente', label: 'Suplente', icon: '🏛️' },
+                  { value: 'lideranca', label: 'Liderança', icon: '👥' },
+                  { value: 'fiscal', label: 'Fiscal', icon: '🛡️' },
+                  { value: 'coordenador', label: 'Coordenador', icon: '📋' },
+                ].map(opt => (
+                  <button key={opt.value}
+                    onClick={() => { setTipoUsuario(opt.value); setLinkedSuplenteId(null); setLinkSearch(''); }}
+                    className={`py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                      tipoUsuario === opt.value
+                        ? 'gradient-primary text-white shadow-lg'
+                        : 'bg-muted border border-border text-muted-foreground'
+                    }`}
+                    disabled={creating.tipo === 'suplente'}
+                  >
+                    {opt.icon} {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Nome */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Nome de acesso</label>
               <input type="text" value={nome} onChange={e => setNome(e.target.value)} className={inputCls} placeholder="Nome completo" />
             </div>
+
+            {/* Senha */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Senha</label>
               <div className="relative">
@@ -341,17 +436,51 @@ export default function TabUsuarios() {
                 </button>
               </div>
             </div>
-            {creating.tipo === 'avulso' && (
+
+            {/* Link to suplente (when type is suplente and avulso) */}
+            {showLinkSection && tipoUsuario === 'suplente' && (
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Tipo de usuário</label>
-                <select value={tipoUsuario} onChange={e => setTipoUsuario(e.target.value)} className={inputCls}>
-                  <option value="suplente">Suplente</option>
-                  <option value="lideranca">Liderança</option>
-                  <option value="fiscal">Fiscal</option>
-                  <option value="coordenador">Coordenador</option>
-                </select>
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                  <Link2 size={12} /> Vincular a suplente (opcional)
+                </label>
+                {selectedSuplente ? (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl border border-primary/30 bg-primary/5">
+                    <CheckCircle2 size={16} className="text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{selectedSuplente.nome}</p>
+                      <p className="text-[10px] text-muted-foreground">{selectedSuplente.partido || '—'} · {selectedSuplente.regiao_atuacao || '—'}</p>
+                    </div>
+                    <button onClick={() => { setLinkedSuplenteId(null); setLinkSearch(''); }}
+                      className="text-[10px] text-destructive font-medium shrink-0">Remover</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <input value={linkSearch} onChange={e => setLinkSearch(e.target.value)}
+                        placeholder="Buscar suplente para vincular..."
+                        className="w-full h-10 pl-8 pr-3 bg-muted border border-border rounded-xl text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
+                    </div>
+                    {linkSuplentesFiltered.length > 0 && (
+                      <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                        {linkSuplentesFiltered.map(s => (
+                          <button key={s.id} onClick={() => { setLinkedSuplenteId(s.id); setLinkSearch(''); }}
+                            className="w-full flex items-center gap-2 p-2 rounded-lg bg-card border border-border text-left active:scale-[0.98]">
+                            <User size={14} className="text-blue-500 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-foreground truncate">{s.nome}</p>
+                              <p className="text-[9px] text-muted-foreground">{s.partido || '—'} · {s.regiao_atuacao || '—'}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
+
+            {/* Superior */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Superior hierárquico</label>
               <select value={superiorId} onChange={e => setSuperiorId(e.target.value)} className={inputCls}>
@@ -359,6 +488,30 @@ export default function TabUsuarios() {
                 {possiveisSuperior.map(u => (<option key={u.id} value={u.id}>{u.nome} ({tipoLabel(u.tipo)})</option>))}
               </select>
             </div>
+
+            {/* Módulos / Permissões inline */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Permissões de acesso</label>
+              <div className="grid grid-cols-1 gap-1.5">
+                {MODULOS_INLINE.map(mod => {
+                  const active = selectedModulos.has(mod.id);
+                  return (
+                    <button key={mod.id} onClick={() => toggleModuloInline(mod.id)}
+                      className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all active:scale-[0.98] ${
+                        active ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+                      }`}>
+                      <div className={`w-4.5 h-4.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                        active ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                      }`}>
+                        {active && <span className="text-white text-[10px] font-bold">✓</span>}
+                      </div>
+                      <span className="text-xs font-medium text-foreground">{mod.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button onClick={handleCreate} disabled={saving}
               className="w-full h-12 gradient-primary text-white text-sm font-semibold rounded-xl shadow-lg active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
               {saving ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
@@ -381,9 +534,9 @@ export default function TabUsuarios() {
         {([
           { id: 'gerenciar' as SubTab, label: `Usuários (${usuarios.length})` },
           { id: 'suplentes' as SubTab, label: `Suplentes (${suplentes.length})` },
-          { id: 'avulso' as SubTab, label: '+ Avulso' },
+          { id: 'avulso' as SubTab, label: '+ Novo' },
         ]).map(t => (
-          <button key={t.id} onClick={() => { setSubTab(t.id); setSearch(''); }}
+          <button key={t.id} onClick={() => { setSubTab(t.id); setSearch(''); if (t.id === 'avulso') openCreateAvulso(); }}
             className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all ${
               subTab === t.id ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
             }`}>
@@ -391,21 +544,6 @@ export default function TabUsuarios() {
           </button>
         ))}
       </div>
-
-      {/* AVULSO - Create user without suplente */}
-      {subTab === 'avulso' && (
-        <div className="space-y-3">
-          <div className="section-card text-center py-6">
-            <UserPlus size={32} className="mx-auto text-primary mb-2" />
-            <h3 className="text-sm font-bold text-foreground mb-1">Criar Usuário Avulso</h3>
-            <p className="text-xs text-muted-foreground mb-4">Crie um usuário sem vínculo com suplente do banco externo</p>
-            <button onClick={openCreateAvulso}
-              className="px-6 py-2.5 gradient-primary text-white text-sm font-semibold rounded-xl shadow-lg active:scale-[0.97]">
-              <UserPlus size={16} className="inline mr-2" /> Criar Usuário
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* SUPLENTES - Create from external DB */}
       {subTab === 'suplentes' && (
