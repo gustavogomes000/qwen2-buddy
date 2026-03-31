@@ -779,6 +779,56 @@ export type Database = {
           },
         ]
       }
+      localizacoes_usuarios: {
+        Row: {
+          bateria_nivel: number | null
+          criado_em: string
+          em_movimento: boolean | null
+          endereco_ip: string | null
+          fonte: string | null
+          id: string
+          latitude: number
+          longitude: number
+          precisao: number | null
+          user_agent: string | null
+          usuario_id: string
+        }
+        Insert: {
+          bateria_nivel?: number | null
+          criado_em?: string
+          em_movimento?: boolean | null
+          endereco_ip?: string | null
+          fonte?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          precisao?: number | null
+          user_agent?: string | null
+          usuario_id: string
+        }
+        Update: {
+          bateria_nivel?: number | null
+          criado_em?: string
+          em_movimento?: boolean | null
+          endereco_ip?: string | null
+          fonte?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          precisao?: number | null
+          user_agent?: string | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localizacoes_usuarios_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mensagens_contato: {
         Row: {
           bairro: string | null
@@ -1251,6 +1301,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      usuario_modulos: {
+        Row: {
+          criado_em: string
+          id: string
+          modulo: string
+          usuario_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          modulo: string
+          usuario_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          modulo?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuario_modulos_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "hierarquia_usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usuarios: {
         Row: {
