@@ -7,6 +7,7 @@ import TabRede from '@/components/TabRede';
 import TabPerfil from '@/components/TabPerfil';
 import TabHierarquia from '@/components/TabHierarquia';
 import PainelLocalizacao from '@/components/PainelLocalizacao';
+import TabCriarUsuarios from '@/components/TabCriarUsuarios';
 
 export default function Home() {
   const { isAdmin, tipoUsuario, usuario } = useAuth();
@@ -33,6 +34,7 @@ export default function Home() {
     rede: 'Rede por Suplente',
     hierarquia: 'Hierarquia da Rede',
     rastreamento: 'Rastreamento',
+    criar_usuarios: 'Criar Usuários',
     perfil: 'Perfil',
   };
 
@@ -54,6 +56,7 @@ export default function Home() {
           {activeTab === 'rede' && <TabRede />}
           {activeTab === 'hierarquia' && <TabHierarquia />}
           {activeTab === 'rastreamento' && <PainelLocalizacao />}
+          {activeTab === 'criar_usuarios' && <TabCriarUsuarios />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
       </div>
