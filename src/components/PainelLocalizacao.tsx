@@ -298,6 +298,21 @@ export default function PainelLocalizacao() {
         </div>
       </div>
 
+      {/* Date range filter */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {DATE_FILTER_OPTIONS.map(opt => (
+          <button
+            key={opt.id}
+            onClick={() => handleDateFilterChange(opt.id)}
+            className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full border font-semibold transition-all active:scale-95 ${
+              dateFilter === opt.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-muted-foreground'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {/* User filter chips */}
       {userGroups.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
