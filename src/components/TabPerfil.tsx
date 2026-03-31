@@ -184,7 +184,7 @@ export default function TabPerfil() {
       if (createMode === 'suplente') {
         nomeUsuario = suplentes.find(s => s.id === selectedExternalId)?.nome || '';
       } else {
-        nomeUsuario = liderancas.find(l => l.id === selectedExternalId)?.pessoas?.nome || '';
+        nomeUsuario = liderancas.find(l => l.id === selectedExternalId)?.nome || '';
       }
     }
     if (!senhaNova.trim() || senhaNova.length < 4) {
