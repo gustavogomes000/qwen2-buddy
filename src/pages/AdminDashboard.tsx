@@ -515,66 +515,110 @@ export default function AdminDashboard() {
                           ))}
                         </div>
 
-                        {/* Lista de cadastros expandida */}
+                        {/* Lideranças */}
                         {expandedTipo === 'lideranca' && (
-                          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
                             {usuarioExpandido.liderancas.length === 0 ? (
-                              <p className="text-xs text-muted-foreground text-center py-3">Nenhuma liderança</p>
+                              <p className="text-xs text-muted-foreground text-center py-4">Nenhuma liderança cadastrada</p>
                             ) : usuarioExpandido.liderancas.map((r: any) => (
-                              <div key={r.id} className="p-2 rounded-lg bg-muted/50 border border-border/50">
-                                <p className="text-xs font-semibold text-foreground">{r.pessoas?.nome || '—'}</p>
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
-                                  <span>CPF: {r.pessoas?.cpf || '—'}</span>
-                                  <span>Tel: {r.pessoas?.telefone || '—'}</span>
-                                  <span>Status: {r.status || '—'}</span>
-                                  <span>Região: {r.regiao_atuacao || '—'}</span>
-                                  <span>Tipo: {r.tipo_lideranca || '—'}</span>
-                                  <span>{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                              <div key={r.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                                <div className="flex items-center gap-3 p-3">
+                                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'hsla(217, 91%, 60%, 0.1)' }}>
+                                    <span className="text-xs font-bold" style={{ color: TIPO_COLORS.lideranca }}>{(r.pessoas?.nome || '?').charAt(0)}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-foreground truncate">{r.pessoas?.nome || '—'}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {r.status && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">{r.status}</span>}
+                                      {r.tipo_lideranca && <span className="text-[10px] text-muted-foreground">{r.tipo_lideranca}</span>}
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                                <div className="px-3 pb-2.5 grid grid-cols-2 gap-x-4 gap-y-1">
+                                  {r.pessoas?.cpf && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">CPF</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.cpf}</span></div>}
+                                  {r.pessoas?.telefone && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Telefone</span><a href={`tel:${r.pessoas.telefone}`} className="text-[10px] font-medium text-primary">{r.pessoas.telefone}</a></div>}
+                                  {r.pessoas?.whatsapp && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">WhatsApp</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.whatsapp}</span></div>}
+                                  {r.regiao_atuacao && <div className="flex justify-between col-span-2"><span className="text-[10px] text-muted-foreground">Região</span><span className="text-[10px] font-medium text-foreground">{r.regiao_atuacao}</span></div>}
+                                  {r.pessoas?.zona_eleitoral && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Zona</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.zona_eleitoral}</span></div>}
+                                  {r.pessoas?.secao_eleitoral && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Seção</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.secao_eleitoral}</span></div>}
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
 
+                        {/* Fiscais */}
                         {expandedTipo === 'fiscal' && (
-                          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
                             {usuarioExpandido.fiscais.length === 0 ? (
-                              <p className="text-xs text-muted-foreground text-center py-3">Nenhum fiscal</p>
+                              <p className="text-xs text-muted-foreground text-center py-4">Nenhum fiscal cadastrado</p>
                             ) : usuarioExpandido.fiscais.map((r: any) => (
-                              <div key={r.id} className="p-2 rounded-lg bg-muted/50 border border-border/50">
-                                <p className="text-xs font-semibold text-foreground">{r.pessoas?.nome || '—'}</p>
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
-                                  <span>CPF: {r.pessoas?.cpf || '—'}</span>
-                                  <span>Tel: {r.pessoas?.telefone || '—'}</span>
-                                  <span>Zona: {r.zona_fiscal || '—'}</span>
-                                  <span>Seção: {r.secao_fiscal || '—'}</span>
-                                  <span>Colégio: {r.colegio_eleitoral || '—'}</span>
-                                  <span>Status: {r.status || '—'}</span>
-                                  <span>{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                              <div key={r.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                                <div className="flex items-center gap-3 p-3">
+                                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'hsla(142, 71%, 45%, 0.1)' }}>
+                                    <span className="text-xs font-bold" style={{ color: TIPO_COLORS.fiscal }}>{(r.pessoas?.nome || '?').charAt(0)}</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-foreground truncate">{r.pessoas?.nome || '—'}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {r.status && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">{r.status}</span>}
+                                      {(r.zona_fiscal || r.secao_fiscal) && <span className="text-[10px] text-muted-foreground">Z{r.zona_fiscal || '—'} S{r.secao_fiscal || '—'}</span>}
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                                <div className="px-3 pb-2.5 grid grid-cols-2 gap-x-4 gap-y-1">
+                                  {r.pessoas?.cpf && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">CPF</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.cpf}</span></div>}
+                                  {r.pessoas?.telefone && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Telefone</span><a href={`tel:${r.pessoas.telefone}`} className="text-[10px] font-medium text-primary">{r.pessoas.telefone}</a></div>}
+                                  {r.pessoas?.whatsapp && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">WhatsApp</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.whatsapp}</span></div>}
+                                  {r.colegio_eleitoral && <div className="flex justify-between col-span-2"><span className="text-[10px] text-muted-foreground">Colégio</span><span className="text-[10px] font-medium text-foreground">{r.colegio_eleitoral}</span></div>}
+                                  {r.pessoas?.zona_eleitoral && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Zona eleitoral</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.zona_eleitoral}</span></div>}
+                                  {r.pessoas?.secao_eleitoral && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Seção eleitoral</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.secao_eleitoral}</span></div>}
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
 
+                        {/* Eleitores */}
                         {expandedTipo === 'eleitor' && (
-                          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
                             {usuarioExpandido.eleitores.length === 0 ? (
-                              <p className="text-xs text-muted-foreground text-center py-3">Nenhum eleitor</p>
-                            ) : usuarioExpandido.eleitores.map((r: any) => (
-                              <div key={r.id} className="p-2 rounded-lg bg-muted/50 border border-border/50">
-                                <p className="text-xs font-semibold text-foreground">{r.pessoas?.nome || '—'}</p>
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-[10px] text-muted-foreground">
-                                  <span>CPF: {r.pessoas?.cpf || '—'}</span>
-                                  <span>Tel: {r.pessoas?.telefone || '—'}</span>
-                                  <span>WhatsApp: {r.pessoas?.whatsapp || '—'}</span>
-                                  <span>Voto: {r.compromisso_voto || '—'}</span>
-                                  <span>Zona: {r.pessoas?.zona_eleitoral || '—'}</span>
-                                  <span>Seção: {r.pessoas?.secao_eleitoral || '—'}</span>
-                                  <span>{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                              <p className="text-xs text-muted-foreground text-center py-4">Nenhum eleitor cadastrado</p>
+                            ) : usuarioExpandido.eleitores.map((r: any) => {
+                              const votoBg: Record<string, string> = {
+                                'Confirmado': 'bg-emerald-500/10 text-emerald-600',
+                                'Provável': 'bg-blue-500/10 text-blue-600',
+                                'Indefinido': 'bg-amber-500/10 text-amber-600',
+                                'Improvável': 'bg-red-500/10 text-red-600',
+                              };
+                              return (
+                                <div key={r.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                                  <div className="flex items-center gap-3 p-3">
+                                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: 'hsla(280, 70%, 55%, 0.1)' }}>
+                                      <span className="text-xs font-bold" style={{ color: TIPO_COLORS.eleitor }}>{(r.pessoas?.nome || '?').charAt(0)}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-semibold text-foreground truncate">{r.pessoas?.nome || '—'}</p>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${votoBg[r.compromisso_voto || ''] || 'bg-muted text-muted-foreground'}`}>
+                                          {r.compromisso_voto || 'Indefinido'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</span>
+                                  </div>
+                                  <div className="px-3 pb-2.5 grid grid-cols-2 gap-x-4 gap-y-1">
+                                    {r.pessoas?.cpf && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">CPF</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.cpf}</span></div>}
+                                    {r.pessoas?.telefone && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Telefone</span><a href={`tel:${r.pessoas.telefone}`} className="text-[10px] font-medium text-primary">{r.pessoas.telefone}</a></div>}
+                                    {r.pessoas?.whatsapp && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">WhatsApp</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.whatsapp}</span></div>}
+                                    {r.pessoas?.zona_eleitoral && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Zona</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.zona_eleitoral}</span></div>}
+                                    {r.pessoas?.secao_eleitoral && <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Seção</span><span className="text-[10px] font-medium text-foreground">{r.pessoas.secao_eleitoral}</span></div>}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
