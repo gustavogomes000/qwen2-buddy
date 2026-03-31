@@ -110,7 +110,10 @@ export default function PainelLocalizacao() {
     : userGroups;
 
   const mapBounds = useMemo(() => {
-    const pts = displayGroups.flatMap(g => g.locations.map(l => [l.latitude, l.longitude] as [number, number]));
+    const pts = displayGroups.flatMap(g => g.locations
+      .map(l => [Number(l.latitude), Number(l.longitude)] as [number, number])
+      .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180)
+    );
     if (pts.length === 0) return null;
     return L.latLngBounds(pts);
   }, [displayGroups]);
