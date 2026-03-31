@@ -105,9 +105,20 @@ export default function PainelLocalizacao() {
     }).sort((a, b) => new Date(b.lastLocation.criado_em).getTime() - new Date(a.lastLocation.criado_em).getTime());
   }, [locations, usuarios]);
 
-  const displayGroups = selectedUserId
-    ? userGroups.filter(g => g.usuario_id === selectedUserId)
-    : userGroups;
+  // Downsample locations for map performance (max ~200 points per user)
+  const displayGroups = useMemo(() => {
+    const filtered = selectedUserId
+      ? userGroups.filter(g => g.usuario_id === selectedUserId)
+      : userGroups;
+
+    return filtered.map(g => {
+      const locs = g.locations;
+      if (locs.length <= 200) return g;
+      const step = Math.ceil(locs.length / 200);
+      const sampled = locs.filter((_, i) => i === 0 || i === locs.length - 1 || i % step === 0);
+      return { ...g, locations: sampled };
+    });
+  }, [userGroups, selectedUserId]);
 
   const mapBounds = useMemo(() => {
     const pts = displayGroups.flatMap(g => g.locations
