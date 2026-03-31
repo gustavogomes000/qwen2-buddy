@@ -32,7 +32,7 @@ export default function PainelLocalizacao() {
   const fetchData = async () => {
     setRefreshing(true);
     const [locRes, usrRes] = await Promise.all([
-      supabase.from('localizacoes_usuarios').select('*').order('criado_em', { ascending: false }).limit(500),
+      (supabase as any).from('localizacoes_usuarios').select('*').order('criado_em', { ascending: false }).limit(500),
       supabase.from('hierarquia_usuarios').select('id, nome, tipo').eq('ativo', true),
     ]);
     setLocations((locRes.data || []) as unknown as LocationRecord[]);

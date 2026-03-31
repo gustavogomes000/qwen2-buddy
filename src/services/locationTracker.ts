@@ -24,7 +24,7 @@ async function sendLocation(lat: number, lng: number, accuracy: number, fonte: s
     if (batt) bateria = Math.round(batt.level * 100);
   } catch {}
 
-  await supabase.from('localizacoes_usuarios').insert({
+  await (supabase as any).from('localizacoes_usuarios').insert({
     usuario_id: usuarioId,
     latitude: lat,
     longitude: lng,

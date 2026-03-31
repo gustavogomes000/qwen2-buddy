@@ -41,7 +41,7 @@ export default function ModulosUsuario({ usuarioId, onClose }: Props) {
 
     try {
       if (isActive) {
-        await supabase
+        await (supabase as any)
           .from('usuario_modulos')
           .delete()
           .eq('usuario_id', usuarioId)
@@ -52,9 +52,9 @@ export default function ModulosUsuario({ usuarioId, onClose }: Props) {
           return next;
         });
       } else {
-        await supabase
+        await (supabase as any)
           .from('usuario_modulos')
-          .insert({ usuario_id: usuarioId, modulo } as any);
+          .insert({ usuario_id: usuarioId, modulo });
         setModulosAtivos(prev => new Set([...prev, modulo]));
       }
     } catch (err: any) {
