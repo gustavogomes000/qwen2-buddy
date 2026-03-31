@@ -12,6 +12,7 @@ const situacoesTitulo = ['Regular', 'Cancelado', 'Suspenso', 'Não informado'];
 
 const emptyForm = {
   cpf: '', nome: '', telefone: '', whatsapp: '', email: '',
+  instagram: '', facebook: '',
   titulo_eleitor: '', zona_eleitoral: '', secao_eleitoral: '',
   municipio_eleitoral: '', uf_eleitoral: '', colegio_eleitoral: '',
   endereco_colegio: '', situacao_titulo: '',
