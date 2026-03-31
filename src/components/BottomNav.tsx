@@ -17,7 +17,6 @@ const ALL_TABS: { id: TabId; icon: typeof Users; label: string; module?: string 
   { id: 'eleitores', icon: Target, label: 'Eleitores', module: 'cadastrar_eleitores' },
   { id: 'cadastros', icon: List, label: 'Cadastros' },
   { id: 'rastreamento', icon: MapPin, label: 'Rastro' },
-  { id: 'usuarios', icon: UserCog, label: 'Usuários' },
   { id: 'perfil', icon: UserCircle, label: 'Perfil' },
 ];
 
