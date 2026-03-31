@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rede-sarelli-v2';
+const CACHE_NAME = 'rede-sarelli-v3';
 const OFFLINE_URLS = ['/', '/index.html'];
 
 // Install
@@ -39,36 +39,56 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync
+// ── Background Sync ─────────────────────────────────────────────────────────
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-location') {
-    event.waitUntil(captureAndSendLocation());
+    event.waitUntil(captureAndBroadcast());
   }
 });
 
-// Periodic background sync
+// ── Periodic Background Sync (Android Chrome) ───────────────────────────────
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'location-sync') {
-    event.waitUntil(captureAndSendLocation());
+    event.waitUntil(captureAndBroadcast());
   }
 });
 
-async function captureAndSendLocation() {
-  try {
-    const res = await fetch('https://ipapi.co/json/');
-    if (res.ok) {
+// ── Push event (keeps SW alive) ─────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  event.waitUntil(captureAndBroadcast());
+});
+
+// IP-based location capture from Service Worker
+const IP_PROVIDERS = [
+  { url: 'https://ipapi.co/json/', extract: (d) => ({ lat: d?.latitude, lng: d?.longitude }) },
+  { url: 'https://ipwho.is/', extract: (d) => ({ lat: d?.latitude, lng: d?.longitude }) },
+  { url: 'https://ip-api.com/json/?fields=lat,lon', extract: (d) => ({ lat: d?.lat, lng: d?.lon }) },
+];
+
+async function captureAndBroadcast() {
+  for (const p of IP_PROVIDERS) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch(p.url, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) continue;
       const data = await res.json();
-      if (data.latitude && data.longitude) {
-        const clients = await self.clients.matchAll();
+      const c = p.extract(data);
+      if (isFinite(c.lat) && isFinite(c.lng)) {
+        const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         clients.forEach((client) => {
           client.postMessage({
             type: 'BACKGROUND_LOCATION',
-            latitude: data.latitude,
-            longitude: data.longitude,
-            fonte: 'ip_background',
+            latitude: c.lat,
+            longitude: c.lng,
+            fonte: 'sw_bg',
           });
         });
+        return;
       }
+    } catch {
+      continue;
     }
-  } catch {}
+  }
 }
