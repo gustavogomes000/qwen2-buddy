@@ -59,6 +59,7 @@ export default function Home() {
           {activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
           {activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={() => setRefreshKey(k => k + 1)} />}
           {activeTab === 'rede' && <TabRede />}
+          {activeTab === 'rastreamento' && <PainelLocalizacao />}
           {activeTab === 'perfil' && <TabPerfil />}
         </div>
       </div>
