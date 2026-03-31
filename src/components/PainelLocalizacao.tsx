@@ -162,7 +162,7 @@ export default function PainelLocalizacao() {
         .from('hierarquia_usuarios')
         .select('id, tipo')
         .eq('auth_user_id', user.id)
-        .eq('ativo', true)
+        .neq('ativo', false)
         .maybeSingle();
 
       if (!currentUser) { setLocations([]); setUsuarios([]); return; }
@@ -179,7 +179,7 @@ export default function PainelLocalizacao() {
       if (since) locationQuery = locationQuery.gte('criado_em', since);
       if (!isAdmin) locationQuery = locationQuery.eq('usuario_id', currentUser.id);
 
-      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo').eq('ativo', true);
+      const userQuery = supabase.from('hierarquia_usuarios').select('id, nome, tipo').neq('ativo', false);
       if (!isAdmin) userQuery.eq('id', currentUser.id);
 
       const [locRes, usrRes] = await Promise.all([locationQuery, userQuery]);
