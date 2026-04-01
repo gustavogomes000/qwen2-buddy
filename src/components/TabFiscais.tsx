@@ -95,32 +95,41 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
 
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
 
-  const fetchData = useCallback(async () => {
+  const PAGE_SIZE = 20;
+  const QUERY_LISTA_FISC = 'id, status, colegio_eleitoral, zona_fiscal, secao_fiscal, cadastrado_por, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp)';
+
+  const fetchData = useCallback(async (reset = true) => {
     if (!usuario) return;
-    setLoading(true);
+    if (reset) { setLoading(true); paginaRef.current = 0; } else { setCarregandoMais(true); }
 
     const filtroMunicipioId = (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador')
       ? (isTodasCidades ? null : cidadeAtiva?.id)
       : authMunicipioId;
 
+    const from = paginaRef.current * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
     let query = (supabase as any)
       .from('fiscais')
-      .select('id, status, colegio_eleitoral, zona_fiscal, secao_fiscal, lideranca_id, cadastrado_por, observacoes, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, zona_eleitoral, secao_eleitoral, titulo_eleitor, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo)')
-      .order('criado_em', { ascending: false });
+      .select(QUERY_LISTA_FISC, { count: 'exact' })
+      .order('criado_em', { ascending: false })
+      .range(from, to);
 
-    if (filtroMunicipioId) {
-      query = query.eq('municipio_id', filtroMunicipioId);
-    }
-    if (tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador') {
-      query = query.eq('cadastrado_por', usuario.id);
-    }
+    if (filtroMunicipioId) query = query.eq('municipio_id', filtroMunicipioId);
+    if (tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador') query = query.eq('cadastrado_por', usuario.id);
 
     const { data: fiscais } = await query;
-    if (fiscais) setData(fiscais as unknown as FiscalRow[]);
+    if (fiscais) {
+      if (reset) setData(fiscais as unknown as FiscalRow[]);
+      else setData(prev => [...prev, ...(fiscais as unknown as FiscalRow[])]);
+      paginaRef.current += 1;
+      setTemMais(fiscais.length === PAGE_SIZE);
+    }
     setLoading(false);
+    setCarregandoMais(false);
   }, [usuario, tipoUsuario, cidadeAtiva, isTodasCidades, authMunicipioId]);
 
-  useEffect(() => { fetchData(); }, [fetchData, refreshKey]);
+  useEffect(() => { fetchData(true); }, [fetchData, refreshKey]);
 
   useEffect(() => {
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
