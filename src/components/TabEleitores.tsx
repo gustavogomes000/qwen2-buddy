@@ -466,17 +466,9 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           cidadeAtivaId={cidadeAtiva?.id || null}
         />
 
-        {/* Vínculo (opcional) */}
+        {/* Compromisso e Observações */}
         <div className="section-card">
-          <h2 className="section-title">🔗 Vínculo Adicional</h2>
-          <p className="text-[10px] text-muted-foreground -mt-2 mb-2">Opcional: vincule a um fiscal específico.</p>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Fiscal vinculado</label>
-            <select value={form.fiscal_id} onChange={e => update('fiscal_id', e.target.value)} className={selectCls}>
-              <option value="">Nenhum</option>
-              {fiscais.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
-            </select>
-          </div>
+          <h2 className="section-title">📋 Informações Adicionais</h2>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Compromisso de voto</label>
             <select value={form.compromisso_voto} onChange={e => update('compromisso_voto', e.target.value)} className={selectCls}>
