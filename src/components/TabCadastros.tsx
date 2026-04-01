@@ -7,6 +7,7 @@ import { exportAllCadastros } from '@/lib/exportXlsx';
 import { formatCPF } from '@/lib/cpf';
 import { toast } from '@/hooks/use-toast';
 import StatusBadge from '@/components/StatusBadge';
+import SkeletonLista from '@/components/SkeletonLista';
 
 type TipoFiltro = 'todos' | 'lideranca' | 'fiscal' | 'eleitor';
 
