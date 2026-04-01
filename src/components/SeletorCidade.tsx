@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, Check, ChevronDown, X, Users, Shield, Target, Loader2 } from 'lucide-react';
+import { Building2, Check, ChevronDown, X, Users, Shield, Target, Loader2, UserCheck } from 'lucide-react';
 import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,13 +8,14 @@ interface ContagemCidade {
   liderancas: number;
   fiscais: number;
   eleitores: number;
+  usuarios: number;
 }
 
 export default function SeletorCidade() {
   const { cidadeAtiva, setCidadeAtiva, municipios, isTodasCidades } = useCidade();
   const [aberto, setAberto] = useState(false);
   const [contagens, setContagens] = useState<Record<string, ContagemCidade>>({});
-  const [totalGeral, setTotalGeral] = useState<ContagemCidade>({ liderancas: 0, fiscais: 0, eleitores: 0 });
+  const [totalGeral, setTotalGeral] = useState<ContagemCidade>({ liderancas: 0, fiscais: 0, eleitores: 0, usuarios: 0 });
   const [loadingContagens, setLoadingContagens] = useState(false);
 
   useEffect(() => {
@@ -26,19 +27,20 @@ export default function SeletorCidade() {
 
       // Use count queries (head: true) per municipality — efficient, no row limit issues
       const counts: Record<string, ContagemCidade> = {};
-      const totals: ContagemCidade = { liderancas: 0, fiscais: 0, eleitores: 0 };
+      const totals: ContagemCidade = { liderancas: 0, fiscais: 0, eleitores: 0, usuarios: 0 };
 
       const queries = municipios.flatMap(m => [
         (supabase as any).from('liderancas').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).then((r: any) => ({ mId: m.id, tipo: 'liderancas' as const, count: r.count ?? 0 })),
         (supabase as any).from('fiscais').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).then((r: any) => ({ mId: m.id, tipo: 'fiscais' as const, count: r.count ?? 0 })),
         (supabase as any).from('possiveis_eleitores').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).then((r: any) => ({ mId: m.id, tipo: 'eleitores' as const, count: r.count ?? 0 })),
+        (supabase as any).from('hierarquia_usuarios').select('*', { count: 'exact', head: true }).eq('municipio_id', m.id).eq('ativo', true).then((r: any) => ({ mId: m.id, tipo: 'usuarios' as const, count: r.count ?? 0 })),
       ]);
 
       const results = await Promise.all(queries);
       if (cancelled) return;
 
       for (const m of municipios) {
-        counts[m.id] = { liderancas: 0, fiscais: 0, eleitores: 0 };
+        counts[m.id] = { liderancas: 0, fiscais: 0, eleitores: 0, usuarios: 0 };
       }
 
       for (const r of results) {
@@ -57,7 +59,7 @@ export default function SeletorCidade() {
   }, [aberto, municipios]);
 
   const nomeAtual = isTodasCidades ? 'Todas as cidades' : cidadeAtiva?.nome || 'Selecionar';
-  const totalGeralNum = totalGeral.liderancas + totalGeral.fiscais + totalGeral.eleitores;
+  const totalGeralNum = totalGeral.liderancas + totalGeral.fiscais + totalGeral.eleitores + totalGeral.usuarios;
 
   return (
     <>
@@ -119,8 +121,8 @@ export default function SeletorCidade() {
               {/* Cidades individuais */}
               {municipios.map(m => {
                 const selected = cidadeAtiva?.id === m.id;
-                const c = contagens[m.id] || { liderancas: 0, fiscais: 0, eleitores: 0 };
-                const total = c.liderancas + c.fiscais + c.eleitores;
+                const c = contagens[m.id] || { liderancas: 0, fiscais: 0, eleitores: 0, usuarios: 0 };
+                const total = c.liderancas + c.fiscais + c.eleitores + c.usuarios;
 
                 return (
                   <button
@@ -168,18 +170,23 @@ export default function SeletorCidade() {
 function CityBadges({ c }: { c: ContagemCidade }) {
   return (
     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+      {c.usuarios > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full font-medium">
+          <UserCheck size={9} /> {c.usuarios} usr
+        </span>
+      )}
       {c.liderancas > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-purple-600 bg-purple-500/10 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full font-medium">
           <Users size={9} /> {c.liderancas}
         </span>
       )}
       {c.fiscais > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-accent-foreground bg-accent px-1.5 py-0.5 rounded-full font-medium">
           <Shield size={9} /> {c.fiscais}
         </span>
       )}
       {c.eleitores > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 bg-blue-500/10 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-secondary-foreground bg-secondary px-1.5 py-0.5 rounded-full font-medium">
           <Target size={9} /> {c.eleitores}
         </span>
       )}
