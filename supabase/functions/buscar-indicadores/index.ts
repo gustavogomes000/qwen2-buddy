@@ -70,15 +70,7 @@ Deno.serve(async (req) => {
     }));
 
     return new Response(
-      JSON.stringify({
-        suplentes: (suplentes || []).map(s => ({
-          id: s.id,
-          nome: s.nome,
-          partido: s.partido,
-          regiao_atuacao: s.regiao_atuacao,
-        })),
-        liderancas: liderancasUnificadas,
-      }),
+      JSON.stringify({ suplentes, liderancas }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
