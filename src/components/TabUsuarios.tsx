@@ -680,6 +680,8 @@ export default function TabUsuarios() {
             })}
           </div>
 
+          <p className="text-xs text-muted-foreground">{filteredUsuarios.length} usuário{filteredUsuarios.length !== 1 ? 's' : ''}</p>
+
           <div className="space-y-2">
             {filteredUsuarios.map(u => (
               <div key={u.id} className="bg-card rounded-xl border border-border p-3 flex items-center gap-3">
