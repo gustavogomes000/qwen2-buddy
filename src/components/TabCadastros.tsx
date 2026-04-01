@@ -25,13 +25,33 @@ interface CadastroUnificado {
   zona_eleitoral: string | null;
   secao_eleitoral: string | null;
   colegio_eleitoral: string | null;
+  endereco_colegio: string | null;
   municipio_eleitoral: string | null;
+  uf_eleitoral: string | null;
   titulo_eleitor: string | null;
+  situacao_titulo: string | null;
   observacoes: string | null;
   status: string | null;
   regiao: string | null;
   cadastrado_por_nome: string | null;
   criado_em: string;
+  // Liderança specific
+  tipo_lideranca: string | null;
+  nivel: string | null;
+  bairros_influencia: string | null;
+  comunidades_influencia: string | null;
+  apoiadores_estimados: number | null;
+  meta_votos: number | null;
+  nivel_comprometimento: string | null;
+  origem_captacao: string | null;
+  // Fiscal specific
+  zona_fiscal: string | null;
+  secao_fiscal: string | null;
+  colegio_fiscal: string | null;
+  lideranca_nome: string | null;
+  // Eleitor specific
+  compromisso_voto: string | null;
+  fiscal_nome: string | null;
 }
 
 const tipoConfig = {
