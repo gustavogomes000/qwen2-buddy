@@ -15,25 +15,22 @@ Deno.serve(async (req) => {
     const externalKey = Deno.env.get('EXTERNAL_SUPABASE_SERVICE_KEY') || Deno.env.get('EXTERNAL_SUPABASE_ANON_KEY');
 
     if (!externalUrl || !externalKey) {
-      return new Response(
-        JSON.stringify([]),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const externalSupabase = createClient(externalUrl, externalKey);
 
-    // Fetch liderancas and pessoas separately to avoid FK join issues
     const [lRes, pRes] = await Promise.all([
       externalSupabase.from('liderancas').select('*'),
-      externalSupabase.from('pessoas').select('id, nome, telefone, whatsapp, email'),
+      externalSupabase.from('pessoas').select('id, nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo'),
     ]);
 
     if (lRes.error && pRes.error) {
-      // Both failed - try direct query on liderancas with nome column
       const { data, error } = await externalSupabase
         .from('liderancas')
-        .select('id, nome, regiao_atuacao, whatsapp')
+        .select('id, nome, regiao_atuacao, whatsapp, status, tipo_lideranca, nivel_comprometimento, apoiadores_estimados, meta_votos, observacoes, criado_em')
         .order('nome');
 
       if (error) {
@@ -47,13 +44,20 @@ Deno.serve(async (req) => {
         (data || []).map((l: any) => ({
           id: l.id,
           nome: l.nome || '—',
-          regiao_atuacao: l.regiao_atuacao || l.regiao || null,
+          regiao_atuacao: l.regiao_atuacao || null,
           whatsapp: l.whatsapp || null,
+          status: l.status || null,
+          tipo_lideranca: l.tipo_lideranca || null,
+          nivel_comprometimento: l.nivel_comprometimento || null,
+          apoiadores_estimados: l.apoiadores_estimados || null,
+          meta_votos: l.meta_votos || null,
+          observacoes: l.observacoes || null,
+          criado_em: l.criado_em || null,
+          pessoa: null,
         }))
       ), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // If pessoas loaded, merge; otherwise use liderancas directly
     if (!lRes.error && lRes.data) {
       const pessoasById = new Map(
         (pRes.data ?? []).map((p: any) => [p.id, p])
@@ -66,6 +70,29 @@ Deno.serve(async (req) => {
           nome: pessoa?.nome || l.nome || '—',
           regiao_atuacao: l.regiao_atuacao || l.regiao || null,
           whatsapp: pessoa?.whatsapp || l.whatsapp || null,
+          status: l.status || null,
+          tipo_lideranca: l.tipo_lideranca || null,
+          nivel_comprometimento: l.nivel_comprometimento || null,
+          apoiadores_estimados: l.apoiadores_estimados || null,
+          meta_votos: l.meta_votos || null,
+          observacoes: l.observacoes || null,
+          criado_em: l.criado_em || null,
+          pessoa: pessoa ? {
+            cpf: pessoa.cpf || null,
+            telefone: pessoa.telefone || null,
+            whatsapp: pessoa.whatsapp || null,
+            email: pessoa.email || null,
+            instagram: pessoa.instagram || null,
+            facebook: pessoa.facebook || null,
+            titulo_eleitor: pessoa.titulo_eleitor || null,
+            zona_eleitoral: pessoa.zona_eleitoral || null,
+            secao_eleitoral: pessoa.secao_eleitoral || null,
+            municipio_eleitoral: pessoa.municipio_eleitoral || null,
+            uf_eleitoral: pessoa.uf_eleitoral || null,
+            colegio_eleitoral: pessoa.colegio_eleitoral || null,
+            endereco_colegio: pessoa.endereco_colegio || null,
+            situacao_titulo: pessoa.situacao_titulo || null,
+          } : null,
         };
       });
 
