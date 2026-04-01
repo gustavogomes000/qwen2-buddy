@@ -666,6 +666,9 @@ export default function TabPerfil() {
         </span>
       </div>
 
+      {/* Self password change */}
+      <SelfPasswordChange />
+
       {/* User management - Admin only */}
       {isAdmin && (
         <div className="section-card">
