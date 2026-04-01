@@ -253,7 +253,7 @@ export default function TabRede() {
                 </p>
               )}
             </div>
-            {tipo === 'eleitor' ? compromissoBadge(selectedRecord.compromisso_voto) : <StatusBadge status={selectedRecord.status} />}
+            {tipo === 'eleitor' && compromissoBadge(selectedRecord.compromisso_voto)}
           </div>
           <div className="flex gap-2 pt-2">
             {p?.whatsapp && <a href={`https://wa.me/55${p.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium"><MessageCircle size={14} /> WhatsApp</a>}
