@@ -11,7 +11,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { acao, hierarquia_id, auth_user_id, novo_nome, nova_senha } = await req.json();
+    const body = await req.json();
+    const { acao, hierarquia_id, auth_user_id, novo_nome, nova_senha, novo_municipio_id } = body;
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -50,11 +51,20 @@ Deno.serve(async (req) => {
     }
 
     if (acao === 'atualizar') {
+      const updates: Record<string, any> = {};
+
       if (novo_nome) {
         const newEmail = novo_nome.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '') + '@rede.sarelli.com';
-        
         await supabaseAdmin.auth.admin.updateUserById(auth_user_id, { email: newEmail });
-        await supabaseAdmin.from('hierarquia_usuarios').update({ nome: novo_nome.trim() }).eq('id', hierarquia_id);
+        updates.nome = novo_nome.trim();
+      }
+
+      if (novo_municipio_id) {
+        updates.municipio_id = novo_municipio_id;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await supabaseAdmin.from('hierarquia_usuarios').update(updates).eq('id', hierarquia_id);
       }
 
       if (nova_senha) {
@@ -64,6 +74,27 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, message: 'Usuário atualizado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (acao === 'mover_cidade') {
+      if (!hierarquia_id || !novo_municipio_id) {
+        return new Response(
+          JSON.stringify({ error: 'hierarquia_id e novo_municipio_id são obrigatórios' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error } = await supabaseAdmin
+        .from('hierarquia_usuarios')
+        .update({ municipio_id: novo_municipio_id })
+        .eq('id', hierarquia_id);
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Cidade do usuário atualizada' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

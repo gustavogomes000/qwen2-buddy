@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
 import {
   Loader2, UserPlus, Users, User, CheckCircle2, Search, Eye, EyeOff,
-  ChevronRight, ArrowLeft, Shield, Pencil, Trash2, KeyRound, Save, Link2
+  ChevronRight, ArrowLeft, Shield, Pencil, Trash2, KeyRound, Save, Link2, MapPin
 } from 'lucide-react';
 
 interface SuplenteExterno {
@@ -34,6 +34,7 @@ interface HierarchyUser {
   suplente_id: string | null;
   auth_user_id: string | null;
   ativo: boolean;
+  municipio_id: string | null;
 }
 
 type SubTab = 'suplentes' | 'avulso' | 'gerenciar';
@@ -78,6 +79,7 @@ export default function TabUsuarios() {
   const [showEditSenha, setShowEditSenha] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editCidade, setEditCidade] = useState<string>('');
 
   // Modules view
   const [viewingModules, setViewingModules] = useState<HierarchyUser | null>(null);
@@ -87,7 +89,7 @@ export default function TabUsuarios() {
     const [supRes, lidRes, usrRes] = await Promise.all([
       supabase.functions.invoke('buscar-suplentes'),
       supabase.functions.invoke('buscar-liderancas-externo'),
-      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id, ativo').eq('ativo', true).order('nome'),
+      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id, ativo, municipio_id').eq('ativo', true).order('nome'),
     ]);
     if (!supRes.error && supRes.data) setSuplentes(supRes.data);
     if (!lidRes.error && lidRes.data) setLiderancas(lidRes.data);
@@ -206,6 +208,7 @@ export default function TabUsuarios() {
     setEditSenha('');
     setShowEditSenha(false);
     setConfirmDelete(false);
+    setEditCidade(user.municipio_id || '');
   };
 
   const handleEdit = async () => {
@@ -218,7 +221,8 @@ export default function TabUsuarios() {
       const payload: any = { acao: 'atualizar', hierarquia_id: editing.id, auth_user_id: editing.auth_user_id };
       if (editNome.trim() !== editing.nome) payload.novo_nome = editNome.trim();
       if (editSenha.trim()) payload.nova_senha = editSenha.trim();
-      if (!payload.novo_nome && !payload.nova_senha) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
+      if (editCidade && editCidade !== (editing.municipio_id || '')) payload.novo_municipio_id = editCidade;
+      if (!payload.novo_nome && !payload.nova_senha && !payload.novo_municipio_id) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
 
       const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body: payload });
       if (error) throw new Error(error.message);
@@ -343,6 +347,15 @@ export default function TabUsuarios() {
                   {showEditSenha ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><MapPin size={12} /> Cidade</label>
+              <select value={editCidade} onChange={e => setEditCidade(e.target.value)} className={inputCls}>
+                <option value="">Sem cidade</option>
+                {municipios.map(m => (
+                  <option key={m.id} value={m.id}>{m.nome} – {m.uf}</option>
+                ))}
+              </select>
             </div>
             <button onClick={handleEdit} disabled={editSaving}
               className="w-full h-12 gradient-primary text-white text-sm font-semibold rounded-xl shadow-lg active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
@@ -658,7 +671,14 @@ export default function TabUsuarios() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tipoColor(u.tipo)}`}>{tipoLabel(u.tipo)}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tipoColor(u.tipo)}`}>{tipoLabel(u.tipo)}</span>
+                    {u.municipio_id && (
+                      <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                        <MapPin size={8} />{municipios.find(m => m.id === u.municipio_id)?.nome || ''}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   <button onClick={() => setViewingModules(u)}
