@@ -729,27 +729,45 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {municipios.map(m => (
-              <div key={m.id} className="section-card">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building2 size={18} className="text-primary" />
-                    <div>
-                      <p className="text-sm font-bold text-foreground">{m.nome}</p>
-                      <p className="text-[10px] text-muted-foreground">{m.uf}</p>
+            {municipios.map(m => {
+              // Count registros per city
+              const lidCount = liderancas.filter((l: any) => l.municipio_id === m.id).length;
+              const fisCount = fiscais.filter((f: any) => f.municipio_id === m.id).length;
+              const eleCount = eleitores.filter((e: any) => e.municipio_id === m.id).length;
+              const totalCity = lidCount + fisCount + eleCount;
+
+              return (
+                <div key={m.id} className="section-card">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 size={18} className="text-primary" />
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{m.nome}</p>
+                        <p className="text-[10px] text-muted-foreground">{m.uf}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => { setCidadeAtiva({ id: m.id, nome: m.nome }); navigate('/'); }}
+                        className="text-[10px] text-primary font-semibold px-2 py-1 rounded-lg bg-primary/5 active:scale-95"
+                      >
+                        Ver →
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => { setCidadeAtiva({ id: m.id, nome: m.nome }); navigate('/'); }}
-                      className="text-[10px] text-primary font-semibold px-2 py-1 rounded-lg bg-primary/5 active:scale-95"
-                    >
-                      Ver →
-                    </button>
-                  </div>
+                  {totalCity > 0 ? (
+                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border">
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Users size={10} /> {lidCount} lid.</span>
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Shield size={10} /> {fisCount} fisc.</span>
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Target size={10} /> {eleCount} eleit.</span>
+                      <span className="ml-auto text-xs font-bold text-primary">{totalCity}</span>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground/60 mt-2 pt-2 border-t border-border">Nenhum cadastro ainda nesta cidade</p>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {municipios.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-sm text-muted-foreground">Nenhum município cadastrado</p>
