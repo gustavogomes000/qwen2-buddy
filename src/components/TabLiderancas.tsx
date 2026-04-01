@@ -460,7 +460,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
         <div className="section-card">
           <h2 className="section-title">⭐ Perfil e Status</h2>
-          <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Ligação política</label><input type="text" value={form.tipo_lideranca} onChange={e => update('tipo_lideranca', e.target.value)} className={inputCls} /></div>
           
           <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Região de atuação</label><textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} className={textareaCls} /></div>
           <div className="grid grid-cols-2 gap-2">
