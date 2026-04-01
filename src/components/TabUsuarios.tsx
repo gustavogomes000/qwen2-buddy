@@ -221,7 +221,8 @@ export default function TabUsuarios() {
       const payload: any = { acao: 'atualizar', hierarquia_id: editing.id, auth_user_id: editing.auth_user_id };
       if (editNome.trim() !== editing.nome) payload.novo_nome = editNome.trim();
       if (editSenha.trim()) payload.nova_senha = editSenha.trim();
-      if (!payload.novo_nome && !payload.nova_senha) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
+      if (editCidade && editCidade !== (editing.municipio_id || '')) payload.novo_municipio_id = editCidade;
+      if (!payload.novo_nome && !payload.nova_senha && !payload.novo_municipio_id) { toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return; }
 
       const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body: payload });
       if (error) throw new Error(error.message);
