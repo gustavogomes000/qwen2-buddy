@@ -34,6 +34,7 @@ interface UserLocationGroup {
   usuario_id: string;
   nome: string;
   tipo: string;
+  suplente_id: string | null;
   locations: LocationRecord[];
   lastLocation: LocationRecord;
   color: string;
