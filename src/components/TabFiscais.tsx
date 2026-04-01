@@ -98,41 +98,22 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
 
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
 
-  const PAGE_SIZE = 20;
-  const QUERY_LISTA_FISC = 'id, status, colegio_eleitoral, zona_fiscal, secao_fiscal, cadastrado_por, criado_em, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp)';
-
-  const fetchData = useCallback(async (reset = true) => {
-    if (!usuario) return;
-    if (reset) { setLoading(true); paginaRef.current = 0; } else { setCarregandoMais(true); }
-
-    const filtroMunicipioId = (tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador')
-      ? (isTodasCidades ? null : cidadeAtiva?.id)
-      : authMunicipioId;
-
-    const from = paginaRef.current * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-
-    let query = (supabase as any)
-      .from('fiscais')
-      .select(QUERY_LISTA_FISC, { count: 'exact' })
-      .order('criado_em', { ascending: false })
-      .range(from, to);
-
-    if (filtroMunicipioId) query = query.eq('municipio_id', filtroMunicipioId);
-    if (tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador') query = query.eq('cadastrado_por', usuario.id);
-
-    const { data: fiscais } = await query;
-    if (fiscais) {
-      if (reset) setData(fiscais as unknown as FiscalRow[]);
-      else setData(prev => [...prev, ...(fiscais as unknown as FiscalRow[])]);
-      paginaRef.current += 1;
-      setTemMais(fiscais.length === PAGE_SIZE);
+  // Use cached data from React Query
+  useEffect(() => {
+    if (cachedData) {
+      setData(cachedData as unknown as FiscalRow[]);
+      setLoading(false);
+      setTemMais(false);
     }
-    setLoading(false);
-    setCarregandoMais(false);
-  }, [usuario, tipoUsuario, cidadeAtiva, isTodasCidades, authMunicipioId]);
+  }, [cachedData]);
 
-  useEffect(() => { fetchData(true); }, [fetchData, refreshKey]);
+  useEffect(() => {
+    if (cacheLoading) setLoading(true);
+  }, [cacheLoading]);
+
+  useEffect(() => {
+    if (refreshKey > 0) invalidarCadastros();
+  }, [refreshKey, invalidarCadastros]);
 
   useEffect(() => {
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
