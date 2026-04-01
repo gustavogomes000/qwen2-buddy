@@ -198,7 +198,7 @@ export default function PainelLocalizacao() {
       const rec = normalize(e.detail);
       if (!rec) return;
       setLocations(prev => {
-        const filtered = prev.filter(p => !(p.usuario_id === rec.usuario_id && p.id.startsWith('loc-')));
+        const filtered = prev.filter(p => !(p.usuario_id === rec.usuario_id && typeof p.id === 'string' && p.id.startsWith('loc-')));
         return [rec, ...filtered].sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime()).slice(0, 300);
       });
     };
