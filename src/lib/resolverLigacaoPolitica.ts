@@ -71,6 +71,9 @@ export async function resolverLigacaoPolitica(
     resultado.bloqueado = true;
     resultado.suplenteId = usuario.suplente_id;
 
+    // Ensure suplente exists locally
+    await sincronizarSuplenteLocal(usuario.suplente_id);
+
     // Buscar liderança do usuário pelo suplente_id na hierarquia
     try {
       const { data: liderancas } = await supabase
