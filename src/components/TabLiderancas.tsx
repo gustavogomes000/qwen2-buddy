@@ -66,8 +66,9 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [statusFilter, setStatusFilter] = useState('Todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<LiderancaRow | null>(null);
-
-  // Form state
+  const [temMais, setTemMais] = useState(true);
+  const [carregandoMais, setCarregandoMais] = useState(false);
+  const paginaRef = useRef(0);
   const [saving, setSaving] = useState(false);
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
