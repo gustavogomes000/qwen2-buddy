@@ -75,15 +75,8 @@ function applyScopeFilter(
   if (!usuario) return q;
 
   if (scope === 'own') {
-    // Abas regulares: mostrar só da rede do usuário
-    if (isAdmin && usuario.suplente_id) {
-      // Admin com suplente_id vinculado → filtrar por suplente_id
-      q = q.eq('suplente_id', usuario.suplente_id);
-    } else if (!isAdmin) {
-      // Não-admin → só os que ele cadastrou (RLS já garante subordinados)
-      q = q.eq('cadastrado_por', usuario.id);
-    }
-    // Admin sem suplente_id (super_admin puro) → não filtra, vê tudo
+    // Abas regulares: mostrar SOMENTE o que o próprio usuário cadastrou
+    q = q.eq('cadastrado_por', usuario.id);
   } else {
     // Painel admin: admins veem tudo, outros filtram
     if (!isAdmin) {
