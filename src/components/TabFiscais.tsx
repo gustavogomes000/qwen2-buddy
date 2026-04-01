@@ -54,6 +54,8 @@ interface Props {
 export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
   const { usuario, isAdmin, tipoUsuario, municipioId: authMunicipioId } = useAuth();
   const { cidadeAtiva, isTodasCidades } = useCidade();
+  const { data: cachedData, isLoading: cacheLoading } = useFiscais();
+  const invalidarCadastros = useInvalidarCadastros();
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
   const [data, setData] = useState<FiscalRow[]>([]);
   const [loading, setLoading] = useState(true);
