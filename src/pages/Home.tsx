@@ -55,7 +55,7 @@ export default function Home() {
               <p className="text-[10px] text-muted-foreground mt-0.5">Rede política – Dra. Fernanda Sarelli</p>
             </div>
           </div>
-          {showCitySelector && activeTab !== 'perfil' && activeTab !== 'rastreamento' && (
+          {showCitySelector && activeTab !== 'perfil' && (
             <div className="mt-2">
               <SeletorCidade />
             </div>
