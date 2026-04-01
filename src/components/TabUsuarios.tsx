@@ -348,6 +348,15 @@ export default function TabUsuarios() {
                 </button>
               </div>
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><MapPin size={12} /> Cidade</label>
+              <select value={editCidade} onChange={e => setEditCidade(e.target.value)} className={inputCls}>
+                <option value="">Sem cidade</option>
+                {municipios.map(m => (
+                  <option key={m.id} value={m.id}>{m.nome} – {m.uf}</option>
+                ))}
+              </select>
+            </div>
             <button onClick={handleEdit} disabled={editSaving}
               className="w-full h-12 gradient-primary text-white text-sm font-semibold rounded-xl shadow-lg active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
               {editSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
