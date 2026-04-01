@@ -154,6 +154,8 @@ export default function TabUsuarios() {
     setLinkedSuplenteId(null);
     setLinkSearch('');
     setSelectedModulos(new Set());
+    setCidadeSelecionada('');
+    setCidadeErro('');
   };
 
   const handleCreate = async () => {
