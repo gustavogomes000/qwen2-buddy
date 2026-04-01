@@ -299,7 +299,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     toast({ title: 'Liderança excluída' });
     setSelected(null);
     setMode('list');
-    fetchData(true);
+    invalidarCadastros();
   };
 
   const handleDiscard = async (id: string) => {
