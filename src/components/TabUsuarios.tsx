@@ -89,7 +89,7 @@ export default function TabUsuarios() {
     const [supRes, lidRes, usrRes] = await Promise.all([
       supabase.functions.invoke('buscar-suplentes'),
       supabase.functions.invoke('buscar-liderancas-externo'),
-      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id, ativo').eq('ativo', true).order('nome'),
+      supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id, ativo, municipio_id').eq('ativo', true).order('nome'),
     ]);
     if (!supRes.error && supRes.data) setSuplentes(supRes.data);
     if (!lidRes.error && lidRes.data) setLiderancas(lidRes.data);
