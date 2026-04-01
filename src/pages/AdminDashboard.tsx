@@ -156,10 +156,18 @@ export default function AdminDashboard() {
   const filteredUsers = useMemo(() => {
     let list = usuarios.filter(u => u.tipo !== 'super_admin');
     if (tipoUsuarioFiltro !== 'todos') list = list.filter(u => u.tipo === tipoUsuarioFiltro);
-    if (filtroMunicipioId) list = list.filter(u => u.municipio_id === filtroMunicipioId);
+    // Don't filter by city here — show all users and let the UI indicate city
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
       list = list.filter(u => u.nome.toLowerCase().includes(s));
+    }
+    // Sort: users with matching city first, then others
+    if (filtroMunicipioId) {
+      list = list.sort((a, b) => {
+        const aMatch = a.municipio_id === filtroMunicipioId ? 0 : 1;
+        const bMatch = b.municipio_id === filtroMunicipioId ? 0 : 1;
+        return aMatch - bMatch || a.nome.localeCompare(b.nome);
+      });
     }
     return list;
   }, [usuarios, tipoUsuarioFiltro, filtroMunicipioId, searchTerm]);
