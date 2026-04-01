@@ -6,8 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { maskCPF, formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 import { checkCpfDuplicateByUser } from '@/lib/cpfDuplicateCheck';
+import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
 import StatusBadge from '@/components/StatusBadge';
+import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 
 const statusFilters = ['Todas', 'Ativa', 'Potencial', 'Em negociação', 'Fraca', 'Descartada'];
 const statusOptions = ['Ativa', 'Potencial', 'Em negociação', 'Fraca', 'Descartada'];
@@ -75,7 +77,29 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [form, setForm] = useState({ ...emptyForm });
   const cpfTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Ligação política state
+  const [ligBloqueado, setLigBloqueado] = useState(false);
+  const [ligNomeFixo, setLigNomeFixo] = useState<string | null>(null);
+  const [ligSubtitulo, setLigSubtitulo] = useState<string | null>(null);
+  const [ligSuplenteId, setLigSuplenteId] = useState<string | null>(null);
+  const [ligLiderancaId, setLigLiderancaId] = useState<string | null>(null);
+  const [ligMunicipioId, setLigMunicipioId] = useState<string | null>(null);
+  const [ligErro, setLigErro] = useState<string | null>(null);
+
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
+
+  // Resolver ligação política do usuário logado
+  useEffect(() => {
+    if (!usuario) return;
+    resolverLigacaoPolitica(usuario).then(res => {
+      setLigBloqueado(res.bloqueado);
+      setLigNomeFixo(res.nomeFixo);
+      setLigSubtitulo(res.subtitulo);
+      setLigSuplenteId(res.suplenteId);
+      setLigMunicipioId(res.municipioId);
+      if (res.liderancaId) setLigLiderancaId(res.liderancaId);
+    });
+  }, [usuario]);
 
   const fetchData = useCallback(async () => {
     if (!usuario) return;
