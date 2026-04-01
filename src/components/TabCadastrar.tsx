@@ -30,7 +30,8 @@ interface Props {
 }
 
 export default function TabCadastrar({ onSaved }: Props) {
-  const { usuario } = useAuth();
+  const { usuario, tipoUsuario } = useAuth();
+  const { cidadeAtiva } = useCidade();
   const [saving, setSaving] = useState(false);
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
@@ -38,6 +39,27 @@ export default function TabCadastrar({ onSaved }: Props) {
   const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
   const [liderancasExistentes, setLiderancasExistentes] = useState<{ id: string; nome: string }[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
+
+  // Ligação política
+  const [ligBloqueado, setLigBloqueado] = useState(false);
+  const [ligNomeFixo, setLigNomeFixo] = useState<string | null>(null);
+  const [ligSubtitulo, setLigSubtitulo] = useState<string | null>(null);
+  const [ligSuplenteId, setLigSuplenteId] = useState<string | null>(null);
+  const [ligLiderancaId, setLigLiderancaId] = useState<string | null>(null);
+  const [ligMunicipioId, setLigMunicipioId] = useState<string | null>(null);
+  const [ligErro, setLigErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!usuario) return;
+    resolverLigacaoPolitica(usuario).then(res => {
+      setLigBloqueado(res.bloqueado);
+      setLigNomeFixo(res.nomeFixo);
+      setLigSubtitulo(res.subtitulo);
+      setLigSuplenteId(res.suplenteId);
+      setLigMunicipioId(res.municipioId);
+      if (res.liderancaId) setLigLiderancaId(res.liderancaId);
+    });
+  }, [usuario]);
 
   useEffect(() => {
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
