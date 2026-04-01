@@ -70,9 +70,9 @@ export default function SeletorCidade() {
       </button>
 
       {aberto && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setAberto(false)} />
-          <div className="relative w-full max-w-lg bg-card rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-200 max-h-[70vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAberto(false)} />
+          <div className="relative w-full max-w-lg bg-card rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-center pt-2 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
             </div>
