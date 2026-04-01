@@ -375,12 +375,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
           </div>
         )}
 
-        {temMais && (
-          <button onClick={() => fetchAll(false)} disabled={carregandoMais}
-            className="w-full py-3 text-sm text-primary font-medium flex items-center justify-center gap-2 active:scale-[0.97]">
-            {carregandoMais ? <Loader2 size={16} className="animate-spin" /> : 'Carregar mais'}
-          </button>
-        )}
+        {/* All data loaded from cache */}
       </div>
     </div>
   );
