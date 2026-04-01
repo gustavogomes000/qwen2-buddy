@@ -164,7 +164,7 @@ export default function TabPerfil() {
   const [usuarios, setUsuarios] = useState<UsuarioItem[]>([]);
   const [suplentes, setSuplentes] = useState<SuplenteOption[]>([]);
   const [liderancas, setLiderancas] = useState<LiderancaOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   // View mode
@@ -194,14 +194,25 @@ export default function TabPerfil() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+
     try {
-      // Load users first (fast, local DB)
-      const usrRes = await supabase.from('hierarquia_usuarios').select('id, nome, tipo, criado_em, suplente_id, auth_user_id').eq('ativo', true).order('nome');
+      const usrRes = await supabase
+        .from('hierarquia_usuarios')
+        .select('id, nome, tipo, criado_em, suplente_id, auth_user_id')
+        .eq('ativo', true)
+        .order('nome')
+        .abortSignal(controller.signal);
+
       setUsuarios((usrRes.data || []) as UsuarioItem[]);
     } catch (err) {
       console.error('Erro ao carregar usuários:', err);
+      setUsuarios([]);
+    } finally {
+      window.clearTimeout(timeoutId);
+      setLoading(false);
     }
-    setLoading(false);
 
     // Load external data in background (slow edge functions - don't block UI)
     supabase.functions.invoke('buscar-suplentes')
@@ -214,7 +225,6 @@ export default function TabPerfil() {
 
   useEffect(() => {
     if (isAdmin) fetchAll();
-    else setLoading(false);
   }, [isAdmin, fetchAll]);
 
   // Suplentes já vinculados
@@ -739,11 +749,6 @@ export default function TabPerfil() {
     );
   }
 
-  // ─── LIST VIEW (DEFAULT) ────────────────────────
-  if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-primary" /></div>;
-  }
-
   return (
     <div className="space-y-4 pb-24">
       {/* Profile card */}
@@ -773,64 +778,73 @@ export default function TabPerfil() {
             </button>
           </div>
 
-          {/* Search */}
-          {usuarios.length > 5 && (
-            <div className="relative mb-3">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Buscar usuário..."
-                className={`${inputCls} pl-9 h-9 text-xs`}
-              />
+          {loading ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground gap-2 text-sm">
+              <Loader2 size={18} className="animate-spin text-primary" />
+              Carregando usuários...
             </div>
+          ) : (
+            <>
+              {/* Search */}
+              {usuarios.length > 5 && (
+                <div className="relative mb-3">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Buscar usuário..."
+                    className={`${inputCls} pl-9 h-9 text-xs`}
+                  />
+                </div>
+              )}
+
+              {/* Stats */}
+              <div className="flex gap-2 mb-3">
+                <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-foreground">{usuarios.length}</p>
+                  <p className="text-[10px] text-muted-foreground">Total</p>
+                </div>
+                <div className="flex-1 bg-blue-500/5 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-blue-600">{usuarios.filter(u => u.tipo === 'suplente').length}</p>
+                  <p className="text-[10px] text-muted-foreground">Suplentes</p>
+                </div>
+                <div className="flex-1 bg-purple-500/5 rounded-lg px-3 py-2 text-center">
+                  <p className="text-lg font-bold text-purple-600">{usuarios.filter(u => u.tipo === 'lideranca').length}</p>
+                  <p className="text-[10px] text-muted-foreground">Lideranças</p>
+                </div>
+              </div>
+
+              {/* User list */}
+              <div className="space-y-1.5">
+                {filteredUsuarios.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => openEdit(u)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-muted/30 active:scale-[0.98] transition-all text-left"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary">{u.nome.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
+                        {(u.tipo === 'super_admin' || u.tipo === 'coordenador') && <Crown size={12} className="text-primary shrink-0" />}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {tipoLabels[u.tipo as TipoUsuario] || u.tipo}
+                        {getSuplenteNome(u.suplente_id) ? ` · ${getSuplenteNome(u.suplente_id)}` : ''}
+                      </p>
+                    </div>
+                    <Pencil size={14} className="text-muted-foreground shrink-0" />
+                  </button>
+                ))}
+                {filteredUsuarios.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-4">Nenhum usuário encontrado</p>
+                )}
+              </div>
+            </>
           )}
-
-          {/* Stats */}
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1 bg-muted/50 rounded-lg px-3 py-2 text-center">
-              <p className="text-lg font-bold text-foreground">{usuarios.length}</p>
-              <p className="text-[10px] text-muted-foreground">Total</p>
-            </div>
-            <div className="flex-1 bg-blue-500/5 rounded-lg px-3 py-2 text-center">
-              <p className="text-lg font-bold text-blue-600">{usuarios.filter(u => u.tipo === 'suplente').length}</p>
-              <p className="text-[10px] text-muted-foreground">Suplentes</p>
-            </div>
-            <div className="flex-1 bg-purple-500/5 rounded-lg px-3 py-2 text-center">
-              <p className="text-lg font-bold text-purple-600">{usuarios.filter(u => u.tipo === 'lideranca').length}</p>
-              <p className="text-[10px] text-muted-foreground">Lideranças</p>
-            </div>
-          </div>
-
-          {/* User list */}
-          <div className="space-y-1.5">
-            {filteredUsuarios.map(u => (
-              <button
-                key={u.id}
-                onClick={() => openEdit(u)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-card hover:bg-muted/30 active:scale-[0.98] transition-all text-left"
-              >
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-primary">{u.nome.charAt(0).toUpperCase()}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
-                    {(u.tipo === 'super_admin' || u.tipo === 'coordenador') && <Crown size={12} className="text-primary shrink-0" />}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tipoLabels[u.tipo as TipoUsuario] || u.tipo}
-                    {getSuplenteNome(u.suplente_id) ? ` · ${getSuplenteNome(u.suplente_id)}` : ''}
-                  </p>
-                </div>
-                <Pencil size={14} className="text-muted-foreground shrink-0" />
-              </button>
-            ))}
-            {filteredUsuarios.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">Nenhum usuário encontrado</p>
-            )}
-          </div>
         </div>
       )}
 
