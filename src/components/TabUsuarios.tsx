@@ -654,20 +654,31 @@ export default function TabUsuarios() {
               className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
 
-          {/* Stats by type */}
+          {/* Filter by type */}
           <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <button
+              onClick={() => setFiltroTipo('todos')}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
+                filtroTipo === 'todos' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              Todos ({usuarios.length})
+            </button>
             {['super_admin', 'coordenador', 'suplente', 'lideranca', 'fiscal'].map(tipo => {
               const count = usuarios.filter(u => u.tipo === tipo).length;
               if (count === 0) return null;
               return (
-                <div key={tipo} className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold ${tipoColor(tipo)}`}>
+                <button key={tipo}
+                  onClick={() => setFiltroTipo(filtroTipo === tipo ? 'todos' : tipo)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all active:scale-95 ${
+                    filtroTipo === tipo ? 'bg-primary text-primary-foreground' : tipoColor(tipo)
+                  }`}
+                >
                   {tipoLabel(tipo)} ({count})
-                </div>
+                </button>
               );
             })}
           </div>
-
-          <p className="text-xs text-muted-foreground">{filteredUsuarios.length} usuário{filteredUsuarios.length !== 1 ? 's' : ''}</p>
 
           <div className="space-y-2">
             {filteredUsuarios.map(u => (
