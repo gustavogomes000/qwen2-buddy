@@ -98,7 +98,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
 
   const PAGE_SIZE = 20;
-  const QUERY_LISTA_ELE = 'id, compromisso_voto, lideranca_id, fiscal_id, cadastrado_por, criado_em, municipio_id, pessoas(nome, cpf, telefone, whatsapp), liderancas:lideranca_id(id, pessoas(nome)), fiscais:fiscal_id(id, pessoas(nome))';
+  const QUERY_LISTA_ELE = 'id, compromisso_voto, lideranca_id, fiscal_id, cadastrado_por, criado_em, municipio_id, origem_captacao, pessoas(nome, cpf, telefone, whatsapp), liderancas:lideranca_id(id, pessoas(nome)), fiscais:fiscal_id(id, pessoas(nome))';
 
   const fetchData = useCallback(async (reset = true) => {
     if (!usuario) return;
