@@ -70,19 +70,20 @@ export default function SeletorCidade() {
         <ChevronDown size={13} className="text-muted-foreground shrink-0" />
       </button>
 
-      {aberto && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAberto(false)} />
-          <div className="relative w-full max-w-lg bg-card rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-200 max-h-[85vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-center pt-2 pb-1">
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
-
-            <div className="flex items-center justify-between px-4 pb-3">
-              <h3 className="text-sm font-bold text-foreground">🏙️ Selecionar Cidade</h3>
-              <button onClick={() => setAberto(false)} className="p-1 rounded-lg hover:bg-muted">
-                <X size={16} className="text-muted-foreground" />
-              </button>
+      {aberto && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-end justify-center">
+          <button className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setAberto(false)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-card border-t border-border shadow-2xl pb-[max(env(safe-area-inset-bottom),24px)]">
+            <div className="sticky top-0 bg-card z-10">
+              <div className="flex justify-center pt-2 pb-1">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+              </div>
+              <div className="flex items-center justify-between px-4 pb-3">
+                <h3 className="text-sm font-bold text-foreground">🏙️ Selecionar Cidade</h3>
+                <button onClick={() => setAberto(false)} className="p-1 rounded-lg hover:bg-muted">
+                  <X size={16} className="text-muted-foreground" />
+                </button>
+              </div>
             </div>
 
             <div className="px-4 pb-6 space-y-1.5">
@@ -157,7 +158,8 @@ export default function SeletorCidade() {
               })}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
