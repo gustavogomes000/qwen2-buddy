@@ -258,7 +258,6 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               <h2 className="text-lg font-bold text-foreground">{p.nome}</h2>
               <p className="text-sm text-muted-foreground">Fiscal · Z{f.zona_fiscal || '—'} S{f.secao_fiscal || '—'}</p>
             </div>
-            <StatusBadge status={f.status} />
           </div>
           <div className="flex gap-2 pt-2">
             {p.whatsapp && <a href={`https://wa.me/55${p.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener" className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-medium"><MessageCircle size={14} /> WhatsApp</a>}
