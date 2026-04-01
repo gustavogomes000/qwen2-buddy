@@ -107,7 +107,6 @@ Deno.serve(async (req) => {
       if (usuario) {
         cadastradoPor = usuario.id;
         municipioId = usuario.municipio_id;
-        // Find the lideranca record for this user
         const { data: lid } = await supabaseAdmin
           .from('liderancas')
           .select('id, suplente_id')
@@ -115,12 +114,16 @@ Deno.serve(async (req) => {
           .maybeSingle();
         if (lid) {
           validatedLiderancaId = lid.id;
-          validatedSuplenteId = lid.suplente_id;
-        } else {
-          validatedSuplenteId = usuario.suplente_id;
+          // Validate suplente_id FK
+          if (lid.suplente_id) {
+            const { data: sc } = await supabaseAdmin.from('suplentes').select('id').eq('id', lid.suplente_id).maybeSingle();
+            validatedSuplenteId = sc ? sc.id : null;
+          }
+        } else if (usuario.suplente_id) {
+          const { data: sc } = await supabaseAdmin.from('suplentes').select('id').eq('id', usuario.suplente_id).maybeSingle();
+          validatedSuplenteId = sc ? sc.id : null;
         }
       } else {
-        // Try liderancas table directly
         const { data: lid } = await supabaseAdmin
           .from('liderancas')
           .select('id, suplente_id, cadastrado_por, municipio_id')
@@ -130,7 +133,10 @@ Deno.serve(async (req) => {
           return jsonResp({ erro: 'Indicador (liderança) não encontrado' }, 400);
         }
         validatedLiderancaId = lid.id;
-        validatedSuplenteId = lid.suplente_id;
+        if (lid.suplente_id) {
+          const { data: sc } = await supabaseAdmin.from('suplentes').select('id').eq('id', lid.suplente_id).maybeSingle();
+          validatedSuplenteId = sc ? sc.id : null;
+        }
         cadastradoPor = lid.cadastrado_por;
         municipioId = lid.municipio_id;
       }
