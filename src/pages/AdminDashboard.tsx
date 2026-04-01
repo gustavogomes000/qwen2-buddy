@@ -690,7 +690,59 @@ export default function AdminDashboard() {
 
         {/* ══════════ CIDADES ══════════ */}
         {vistaAtiva === 'cidades' && (
-          <CidadesView municipios={municipios} onNavigate={(m) => { setCidadeAtiva({ id: m.id, nome: m.nome }); navigate('/'); }} />
+          <div className="space-y-3">
+            {/* Adicionar cidade */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Nome da nova cidade..."
+                id="nova-cidade-input"
+                className="flex-1 h-10 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <button
+                onClick={async () => {
+                  const input = document.getElementById('nova-cidade-input') as HTMLInputElement;
+                  const nome = input?.value?.trim();
+                  if (!nome) return;
+                  const { error } = await (supabase as any).from('municipios').insert({ nome, uf: 'GO' });
+                  if (error) { toast({ title: 'Erro', description: error.message, variant: 'destructive' }); return; }
+                  toast({ title: `✅ ${nome} adicionada!` });
+                  input.value = '';
+                  fetchData();
+                }}
+                className="h-10 px-4 gradient-primary text-white rounded-xl text-sm font-semibold flex items-center gap-1 active:scale-95"
+              >
+                <Plus size={14} /> Adicionar
+              </button>
+            </div>
+
+            {municipios.map(m => (
+              <div key={m.id} className="section-card">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 size={18} className="text-primary" />
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{m.nome}</p>
+                      <p className="text-[10px] text-muted-foreground">{m.uf}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => { setCidadeAtiva({ id: m.id, nome: m.nome }); navigate('/'); }}
+                      className="text-[10px] text-primary font-semibold px-2 py-1 rounded-lg bg-primary/5 active:scale-95"
+                    >
+                      Ver →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {municipios.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">Nenhum município cadastrado</p>
+              </div>
+            )}
+          </div>
         )}
 
       </div>
