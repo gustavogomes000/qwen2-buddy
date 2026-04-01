@@ -1,17 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Users, TrendingUp, Shield, Target, Filter, Search,
   ChevronDown, ChevronUp, UserCheck, Loader2, Download, Eye, Trophy,
-  BarChart3, UserCog
+  BarChart3, UserCog, Building2
 } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import {
   ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar
 } from 'recharts';
+import SeletorCidade from '@/components/SeletorCidade';
 
 /* ── types ── */
 interface Pessoa {
