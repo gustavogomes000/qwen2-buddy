@@ -280,8 +280,8 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
       const q = searchQuery.toLowerCase();
       const nome = l.pessoas?.nome?.toLowerCase() || '';
       const cpf = l.pessoas?.cpf || '';
-      const tel = l.pessoas?.telefone || '';
-      if (!nome.includes(q) && !cpf.includes(q) && !tel.includes(q)) return false;
+      const wpp = l.pessoas?.whatsapp || '';
+      if (!nome.includes(q) && !cpf.includes(q) && !wpp.includes(q)) return false;
     }
     return true;
   }), [data, statusFilter, searchQuery]);
@@ -527,7 +527,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou telefone..."
+        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..."
           className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
 
