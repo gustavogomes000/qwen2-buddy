@@ -34,6 +34,7 @@ interface HierarchyUser {
   suplente_id: string | null;
   auth_user_id: string | null;
   ativo: boolean;
+  municipio_id: string | null;
 }
 
 type SubTab = 'suplentes' | 'avulso' | 'gerenciar';
