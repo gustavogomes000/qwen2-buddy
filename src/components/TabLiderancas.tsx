@@ -13,8 +13,6 @@ import StatusBadge from '@/components/StatusBadge';
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 import SkeletonLista from '@/components/SkeletonLista';
 
-const statusFilters = ['Todas', 'Ativa', 'Potencial', 'Em negociação', 'Fraca', 'Descartada'];
-const statusOptions = ['Ativa', 'Potencial', 'Em negociação', 'Fraca', 'Descartada'];
 const comprometimentos = ['Alto', 'Médio', 'Baixo'];
 const situacoesTitulo = ['Regular', 'Cancelado', 'Suspenso', 'Não informado'];
 
@@ -66,7 +64,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [mode, setMode] = useState<'list' | 'form' | 'detail'>('list');
   const [data, setData] = useState<LiderancaRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('Todas');
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<LiderancaRow | null>(null);
   const [temMais, setTemMais] = useState(true);
@@ -275,7 +273,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   };
 
   const filtered = useMemo(() => data.filter(l => {
-    if (statusFilter !== 'Todas' && l.status !== statusFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const nome = l.pessoas?.nome?.toLowerCase() || '';
@@ -284,7 +281,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
       if (!nome.includes(q) && !cpf.includes(q) && !wpp.includes(q)) return false;
     }
     return true;
-  }), [data, statusFilter, searchQuery]);
+  }), [data, searchQuery]);
 
   const QUERY_DETALHE = 'id, status, tipo_lideranca, nivel, zona_atuacao, apoiadores_estimados, cadastrado_por, suplente_id, criado_em, regiao_atuacao, bairros_influencia, comunidades_influencia, origem_captacao, meta_votos, nivel_comprometimento, observacoes, municipio_id, pessoas(*), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
 
@@ -456,20 +453,12 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
           
           <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Região de atuação</label><textarea value={form.regiao_atuacao} onChange={e => update('regiao_atuacao', e.target.value)} rows={2} className={textareaCls} /></div>
           <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Quantos votos pode trazer</label><input type="number" value={form.meta_votos} onChange={e => update('meta_votos', e.target.value)} placeholder="Ex: 500" className={inputCls} /></div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Status</label>
-              <select value={form.status} onChange={e => update('status', e.target.value)} className={selectCls}>
-                {statusOptions.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Comprometimento</label>
-              <select value={form.nivel_comprometimento} onChange={e => update('nivel_comprometimento', e.target.value)} className={selectCls}>
-                <option value="">Selecione...</option>
-                {comprometimentos.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Comprometimento</label>
+            <select value={form.nivel_comprometimento} onChange={e => update('nivel_comprometimento', e.target.value)} className={selectCls}>
+              <option value="">Selecione...</option>
+              {comprometimentos.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
           </div>
           <div className="space-y-1"><label className="text-xs font-medium text-muted-foreground">Observações</label><textarea value={form.observacoes} onChange={e => update('observacoes', e.target.value)} rows={3} className={textareaCls} /></div>
         </div>
@@ -514,10 +503,9 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
 
       {isAdmin && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'Total', value: data.length },
-            { label: 'Ativas', value: data.filter(l => l.status === 'Ativa').length },
             { label: 'Apoiadores', value: data.reduce((s, l) => s + (l.apoiadores_estimados || 0), 0) },
           ].map(s => (
             <div key={s.label} className="bg-card rounded-xl border border-border p-2 text-center">
