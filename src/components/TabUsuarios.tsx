@@ -431,7 +431,6 @@ export default function TabUsuarios() {
                 {[
                   { value: 'suplente', label: 'Suplente', icon: '🏛️' },
                   { value: 'lideranca', label: 'Liderança', icon: '👥' },
-                  { value: 'fiscal', label: 'Fiscal', icon: '🛡️' },
                   { value: 'coordenador', label: 'Coordenador', icon: '📋' },
                 ].map(opt => (
                   <button key={opt.value}
