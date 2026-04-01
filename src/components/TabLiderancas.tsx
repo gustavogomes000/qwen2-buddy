@@ -280,8 +280,8 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
       const q = searchQuery.toLowerCase();
       const nome = l.pessoas?.nome?.toLowerCase() || '';
       const cpf = l.pessoas?.cpf || '';
-      const tel = l.pessoas?.telefone || '';
-      if (!nome.includes(q) && !cpf.includes(q) && !tel.includes(q)) return false;
+      const wpp = l.pessoas?.whatsapp || '';
+      if (!nome.includes(q) && !cpf.includes(q) && !wpp.includes(q)) return false;
     }
     return true;
   }), [data, statusFilter, searchQuery]);
