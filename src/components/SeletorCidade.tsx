@@ -170,18 +170,23 @@ export default function SeletorCidade() {
 function CityBadges({ c }: { c: ContagemCidade }) {
   return (
     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+      {c.usuarios > 0 && (
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full font-medium">
+          <UserCheck size={9} /> {c.usuarios} usr
+        </span>
+      )}
       {c.liderancas > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-purple-600 bg-purple-500/10 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full font-medium">
           <Users size={9} /> {c.liderancas}
         </span>
       )}
       {c.fiscais > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-accent-foreground bg-accent px-1.5 py-0.5 rounded-full font-medium">
           <Shield size={9} /> {c.fiscais}
         </span>
       )}
       {c.eleitores > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 bg-blue-500/10 px-1.5 py-0.5 rounded-full font-medium">
+        <span className="inline-flex items-center gap-0.5 text-[10px] text-secondary-foreground bg-secondary px-1.5 py-0.5 rounded-full font-medium">
           <Target size={9} /> {c.eleitores}
         </span>
       )}
