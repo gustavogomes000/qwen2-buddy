@@ -292,7 +292,7 @@ export default function PainelLocalizacao() {
         <div>
           <h2 className="text-sm font-bold text-foreground">📍 Rastreamento</h2>
           <p className="text-[10px] text-muted-foreground">
-            {loading ? 'Carregando...' : `${userGroups.length} usuários · ${locations.length} pontos`}
+            {loading ? 'Carregando...' : `${displayGroups.length}/${userGroups.length} usuários · ${locations.length} pontos`}
           </p>
         </div>
         <button onClick={() => fetchData()} disabled={loading}
