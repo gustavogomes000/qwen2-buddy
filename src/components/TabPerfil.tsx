@@ -66,6 +66,97 @@ type ViewMode = 'list' | 'create' | 'edit';
 
 const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
 
+function SelfPasswordChange() {
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [showSenha, setShowSenha] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [aberto, setAberto] = useState(false);
+
+  const handleAlterarSenha = async () => {
+    if (!novaSenha.trim() || novaSenha.length < 4) {
+      toast({ title: 'Senha deve ter ao menos 4 caracteres', variant: 'destructive' });
+      return;
+    }
+    setSalvando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gerenciar-usuario', {
+        body: { acao: 'alterar_propria_senha', nova_senha: novaSenha.trim() },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      toast({ title: '✅ Senha alterada com sucesso!' });
+      setNovaSenha('');
+      setAberto(false);
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  if (!aberto) {
+    return (
+      <div className="section-card">
+        <button
+          onClick={() => setAberto(true)}
+          className="w-full flex items-center gap-3 text-left"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <KeyRound size={18} className="text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">Alterar Senha</p>
+            <p className="text-[11px] text-muted-foreground">Troque sua senha de acesso</p>
+          </div>
+          <ChevronDown size={16} className="text-muted-foreground" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="section-card space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <KeyRound size={16} className="text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Alterar Senha</h3>
+        </div>
+        <button onClick={() => setAberto(false)} className="text-muted-foreground p-1">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Nova senha</label>
+        <div className="relative">
+          <input
+            type={showSenha ? 'text' : 'password'}
+            value={novaSenha}
+            onChange={e => setNovaSenha(e.target.value)}
+            placeholder="Mínimo 4 caracteres"
+            className={inputCls}
+          />
+          <button
+            type="button"
+            onClick={() => setShowSenha(!showSenha)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          >
+            {showSenha ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </div>
+      <button
+        onClick={handleAlterarSenha}
+        disabled={salvando || novaSenha.length < 4}
+        className="w-full h-11 bg-primary text-primary-foreground text-sm font-semibold rounded-xl active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {salvando ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+        {salvando ? 'Salvando...' : 'Alterar Senha'}
+      </button>
+    </div>
+  );
+}
+
 export default function TabPerfil() {
   const { usuario, isAdmin, tipoUsuario, signOut } = useAuth();
 
@@ -665,6 +756,9 @@ export default function TabPerfil() {
           {tipoUsuario ? tipoLabels[tipoUsuario] : '—'}
         </span>
       </div>
+
+      {/* Self password change */}
+      <SelfPasswordChange />
 
       {/* User management - Admin only */}
       {isAdmin && (
