@@ -691,7 +691,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Summary badges */}
-            <div className="flex gap-2 px-4 py-3 border-b border-border shrink-0">
+            <div className="flex flex-wrap gap-2 px-4 py-3 border-b border-border shrink-0">
               {popupUserData.liderancas.length > 0 && (
                 <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-primary/15 text-primary">
                   <Users size={12} className="inline mr-1" />Lideranças: {popupUserData.liderancas.length}
@@ -702,12 +702,18 @@ export default function AdminDashboard() {
                   <Target size={12} className="inline mr-1" />Eleitores: {popupUserData.eleitores.length}
                 </span>
               )}
+              {popupUserData.fiscais.length > 0 && (
+                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-600">
+                  <Shield size={12} className="inline mr-1" />Fiscais: {popupUserData.fiscais.length}
+                </span>
+              )}
             </div>
 
             {/* Records list */}
             <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-2">
               {[...popupUserData.liderancas.map(r => ({ ...r, _tipo: 'lideranca' as const })),
-                ...popupUserData.eleitores.map(r => ({ ...r, _tipo: 'eleitor' as const }))]
+                ...popupUserData.eleitores.map(r => ({ ...r, _tipo: 'eleitor' as const })),
+                ...popupUserData.fiscais.map(r => ({ ...r, _tipo: 'fiscal' as const }))]
                 .sort((a, b) => new Date(b.criado_em).getTime() - new Date(a.criado_em).getTime())
                 .map((r: any) => {
                   const p = r.pessoas || {};
