@@ -60,7 +60,6 @@ export default function Home() {
     fiscais: 'Cadastro de Fiscais',
     eleitores: 'Cadastro de Eleitores',
     cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
-    rastreamento: 'Rastreamento',
     perfil: 'Perfil & Usuários',
   };
 
