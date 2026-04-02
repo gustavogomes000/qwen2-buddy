@@ -83,15 +83,13 @@ export default function AdminDashboard() {
   const [tipoUsuarioFiltro, setTipoUsuarioFiltro] = useState<TipoUsuarioFiltro>('todos');
 
   const { data: liderancasData, isLoading: lLoading } = useLiderancas('all');
-  const { data: fiscaisData, isLoading: fLoading } = useFiscais('all');
   const { data: eleitoresData, isLoading: eLoading } = useEleitores('all');
   const { data: usuariosData, isLoading: uLoading } = useUsuarios();
 
   const liderancas = (liderancasData || []) as LiderancaReg[];
-  const fiscais = (fiscaisData || []) as FiscalReg[];
   const eleitores = (eleitoresData || []) as EleitorReg[];
   const usuarios = (usuariosData || []) as unknown as HierarquiaUsuario[];
-  const loading = lLoading || fLoading || eLoading || uLoading;
+  const loading = lLoading || eLoading || uLoading;
 
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedTipo, setExpandedTipo] = useState<string | null>(null);
