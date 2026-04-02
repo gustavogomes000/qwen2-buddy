@@ -223,7 +223,7 @@ export default function AdminDashboard() {
       eleitores: filteredE.filter(r => r.cadastrado_por === popupUser),
       fiscais: filteredF.filter(r => r.cadastrado_por === popupUser),
     };
-  }, [popupUser, filteredL, filteredE, usuarios]);
+  }, [popupUser, filteredL, filteredE, filteredF, usuarios]);
 
   const vistaLabels: { id: VistaAtiva; icon: typeof BarChart3; label: string }[] = [
     { id: 'ranking', icon: Trophy, label: 'Ranking' },
