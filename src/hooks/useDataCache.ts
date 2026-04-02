@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 
 /* ── Query keys ── */
 const keys = {
@@ -118,9 +118,9 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
       return data || [];
     },
     enabled: !!usuario,
-    staleTime: 60 * 1000,
+    staleTime: 3_000,
     gcTime: 10 * 60 * 1000,
-    refetchInterval: scope === 'all' ? 15000 : 5000,
+    refetchInterval: scope === 'all' ? 10000 : 5000,
     refetchIntervalInBackground: false,
   });
 }
@@ -152,9 +152,9 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
       return data || [];
     },
     enabled: !!usuario,
-    staleTime: 60 * 1000,
+    staleTime: 3_000,
     gcTime: 10 * 60 * 1000,
-    refetchInterval: scope === 'all' ? 15000 : 5000,
+    refetchInterval: scope === 'all' ? 10000 : 5000,
     refetchIntervalInBackground: false,
   });
 }
@@ -182,8 +182,26 @@ export function useInvalidarCadastros() {
   const qc = useQueryClient();
   return useCallback(() => {
     qc.invalidateQueries({ queryKey: ['liderancas'] });
-    
     qc.invalidateQueries({ queryKey: ['eleitores'] });
+    qc.invalidateQueries({ queryKey: ['fiscais'] });
     qc.invalidateQueries({ queryKey: ['contagens'] });
   }, [qc]);
+}
+
+/* ── Realtime: invalidação instantânea ao receber INSERT/UPDATE/DELETE ── */
+export function useRealtimeSync() {
+  const invalidar = useInvalidarCadastros();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('cadastros-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'liderancas' }, () => invalidar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'possiveis_eleitores' }, () => invalidar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fiscais' }, () => invalidar())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [invalidar]);
 }

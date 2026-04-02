@@ -8,6 +8,7 @@ import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
 import TabPerfil from '@/components/TabPerfil';
 import SeletorCidade from '@/components/SeletorCidade';
+import { useRealtimeSync } from '@/hooks/useDataCache';
 import { Loader2 } from 'lucide-react';
 
 const PainelLocalizacao = lazy(() => import('@/components/PainelLocalizacao'));
@@ -25,6 +26,7 @@ function getInitialTab(): TabId {
 
 export default function Home() {
   const { isAdmin, tipoUsuario } = useAuth();
+  useRealtimeSync();
   const { municipios } = useCidade();
   const [activeTab, setActiveTab] = useState<TabId>(() => getInitialTab());
   const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(() => new Set([getInitialTab()]));
