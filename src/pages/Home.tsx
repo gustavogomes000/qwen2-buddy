@@ -11,7 +11,7 @@ const TabFiscais = lazy(() => import('@/components/TabFiscais'));
 const TabEleitores = lazy(() => import('@/components/TabEleitores'));
 const TabCadastros = lazy(() => import('@/components/TabCadastros'));
 const TabPerfil = lazy(() => import('@/components/TabPerfil'));
-const PainelLocalizacao = lazy(() => import('@/components/PainelLocalizacao'));
+
 const TAB_STORAGE_KEY = 'home-active-tab';
 
 function getInitialTab(): TabId {
