@@ -145,7 +145,6 @@ Deno.serve(async (req) => {
     let municipioId: string | null = null;
     let liderancaIdVinculada: string | null = null;
 
-    // ── PASSO 1: Sempre tentar hierarquia_usuarios primeiro (funciona para TODOS os tipos) ──
     const { data: hierarquiaDirecta } = await supabaseAdmin
       .from('hierarquia_usuarios')
       .select('id, suplente_id, municipio_id')
@@ -159,18 +158,43 @@ Deno.serve(async (req) => {
       municipioId = hierarquiaDirecta.municipio_id;
       console.log(`[receber-cadastro-externo] ✅ Resolvido via hierarquia direta: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}, municipio=${municipioId}`);
     } else {
-      // ── PASSO 2: Fallback por tipo específico ──
       console.log(`[receber-cadastro-externo] Não encontrado em hierarquia_usuarios, tentando resolução por tipo=${indTipo}`);
 
-      if (indTipo === 'suplente') {
-        // Espelhar suplente localmente
+      if ((TIPOS_HIERARQUIA as readonly string[]).includes(indTipo)) {
+        const usuarioPorNome = await resolverHierarquiaPorNome(supabaseAdmin, body.indicador_nome, indTipo);
+        if (usuarioPorNome) {
+          cadastradoPorId = usuarioPorNome.id;
+          suplenteId = usuarioPorNome.suplente_id;
+          municipioId = usuarioPorNome.municipio_id;
+        } else {
+          const sombra = await garantirUsuarioSombra(supabaseAdmin, body.indicador_nome, indTipo, null);
+          if (sombra) {
+            cadastradoPorId = sombra.id;
+            suplenteId = sombra.suplente_id;
+            municipioId = sombra.municipio_id;
+          }
+        }
+
+        if (indTipo === 'lideranca' && cadastradoPorId) {
+          const { data: lidVinculada } = await supabaseAdmin
+            .from('liderancas')
+            .select('id, suplente_id, municipio_id')
+            .eq('cadastrado_por', cadastradoPorId)
+            .limit(1)
+            .maybeSingle();
+          if (lidVinculada) {
+            liderancaIdVinculada = lidVinculada.id;
+            suplenteId = lidVinculada.suplente_id ?? suplenteId;
+            municipioId = lidVinculada.municipio_id ?? municipioId;
+          }
+        }
+      } else if (indTipo === 'suplente') {
         if (body.indicador_nome) {
           await supabaseAdmin.from('suplentes').upsert(
             { id: indId, nome: body.indicador_nome },
             { onConflict: 'id' }
           );
         }
-        // Encontrar usuário vinculado ao suplente
         const { data: usuarioVinculado } = await supabaseAdmin
           .from('hierarquia_usuarios')
           .select('id, suplente_id, municipio_id')
@@ -193,8 +217,6 @@ Deno.serve(async (req) => {
             .maybeSingle();
           municipioId = sm?.municipio_id ?? null;
         }
-        console.log(`[receber-cadastro-externo] Suplente resolvido: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
-
       } else if (indTipo === 'lideranca_cadastrada') {
         const { data: lid } = await supabaseAdmin
           .from('liderancas')
@@ -204,14 +226,10 @@ Deno.serve(async (req) => {
 
         if (lid) {
           liderancaIdVinculada = lid.id;
-          // Tentar encontrar um usuário hierarquia vinculado a essa liderança (via pessoa_id → buscar auth)
-          // Fallback: usar o cadastrado_por da liderança
           cadastradoPorId = lid.cadastrado_por;
           suplenteId = lid.suplente_id;
           municipioId = lid.municipio_id;
         }
-        console.log(`[receber-cadastro-externo] Liderança cadastrada: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
-
       } else if (indTipo === 'fiscal_cadastrado') {
         const { data: fisc } = await supabaseAdmin
           .from('fiscais')
@@ -225,8 +243,6 @@ Deno.serve(async (req) => {
           municipioId = fisc.municipio_id;
           liderancaIdVinculada = fisc.lideranca_id;
         }
-        console.log(`[receber-cadastro-externo] Fiscal cadastrado: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
-
       } else if (indTipo === 'eleitor_cadastrado') {
         const { data: el } = await supabaseAdmin
           .from('possiveis_eleitores')
@@ -240,10 +256,7 @@ Deno.serve(async (req) => {
           municipioId = el.municipio_id;
           liderancaIdVinculada = el.lideranca_id;
         }
-        console.log(`[receber-cadastro-externo] Eleitor cadastrado: cadastrado_por=${cadastradoPorId}, suplente=${suplenteId}`);
-
       } else {
-        // recepcao ou qualquer outro tipo não mapeado → fallback admin
         console.log(`[receber-cadastro-externo] Tipo ${indTipo} sem resolução específica, usando fallback`);
       }
     }
