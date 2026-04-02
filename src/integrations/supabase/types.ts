@@ -963,6 +963,7 @@ export type Database = {
       }
       pessoas: {
         Row: {
+          ativo: boolean
           atualizado_em: string
           colegio_eleitoral: string | null
           cpf: string | null
@@ -987,6 +988,7 @@ export type Database = {
           zona_eleitoral: string | null
         }
         Insert: {
+          ativo?: boolean
           atualizado_em?: string
           colegio_eleitoral?: string | null
           cpf?: string | null
@@ -1011,6 +1013,7 @@ export type Database = {
           zona_eleitoral?: string | null
         }
         Update: {
+          ativo?: boolean
           atualizado_em?: string
           colegio_eleitoral?: string | null
           cpf?: string | null
