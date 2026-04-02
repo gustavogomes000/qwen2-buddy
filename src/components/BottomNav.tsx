@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
-export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
+export type TabId = 'liderancas' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
 
 interface Props {
   active: TabId;
@@ -13,7 +13,6 @@ interface Props {
 
 const ALL_TABS: { id: TabId; icon: typeof Users; label: string; module?: string }[] = [
   { id: 'liderancas', icon: Users, label: 'Lideranças', module: 'cadastrar_liderancas' },
-  { id: 'fiscais', icon: Shield, label: 'Fiscais', module: 'cadastrar_fiscais' },
   { id: 'eleitores', icon: Target, label: 'Eleitores', module: 'cadastrar_eleitores' },
   { id: 'cadastros', icon: List, label: 'Cadastros' },
   { id: 'rastreamento', icon: MapPin, label: 'Rastro' },
