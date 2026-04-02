@@ -38,32 +38,32 @@ Deno.serve(async (req) => {
 
     // Allow self-password-change
     if (acao === 'alterar_propria_senha') {
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        return new Response(
-          JSON.stringify({ error: 'Não autenticado' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-      if (!user) {
-        return new Response(
-          JSON.stringify({ error: 'Token inválido' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       if (!nova_senha || nova_senha.length < 4) {
         return new Response(
           JSON.stringify({ error: 'Senha deve ter ao menos 4 caracteres' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, { password: nova_senha });
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(caller.id, { password: nova_senha });
       if (error) throw error;
       return new Response(
         JSON.stringify({ success: true, message: 'Senha alterada com sucesso' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // For admin actions, verify caller is admin
+    const { data: callerHier } = await supabaseAdmin
+      .from('hierarquia_usuarios')
+      .select('tipo')
+      .eq('auth_user_id', caller.id)
+      .eq('ativo', true)
+      .maybeSingle();
+    
+    if (!callerHier || !['super_admin', 'coordenador'].includes(callerHier.tipo)) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado: apenas administradores podem gerenciar usuários' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
