@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCircle, BarChart3, MapPin, Target, List } from 'lucide-react';
+import { Users, UserCircle, BarChart3, MapPin, Target, List, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
-export type TabId = 'liderancas' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
+export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
 
 interface Props {
   active: TabId;
