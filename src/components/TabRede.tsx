@@ -337,7 +337,7 @@ export default function TabRede() {
         </div>
 
         {/* Export button for super_admin */}
-        {isSuperAdmin && (totalL + totalF + totalE) > 0 && (
+        {isSuperAdmin && (totalL + totalE) > 0 && (
           <button
             onClick={handleExport}
             disabled={exporting}
