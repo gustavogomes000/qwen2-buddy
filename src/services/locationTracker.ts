@@ -353,7 +353,7 @@ class Tracker {
     if (!userId) return;
 
     const battery = await this.getBattery();
-    const emMovimento = this.lastLat !== null && distM(this.lastLat, this.lastLng!, lat, lng) >= 10;
+    const emMovimento = this.lastLat !== null && distM(this.lastLat, this.lastLng!, lat, lng) >= 5;
 
     // Mark background captures
     const actualFonte = this.isBackground ? `${fonte}_bg` : fonte;
