@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useLiderancas, useEleitores, useUsuarios, useFiscaisAdmin } from '@/hooks/useDataCache';
 import {
-  ArrowLeft, Users, Target, Search, X,
+  ArrowLeft, Users, Target, Search, X, Shield,
   ChevronDown, ChevronUp, Loader2, Download, Trophy,
   BarChart3, UserCog, Eye, Building2, Plus, MapPin, Tag, ExternalLink
 } from 'lucide-react';
