@@ -487,6 +487,7 @@ export default function AdminDashboard() {
                           <div className="flex flex-wrap gap-0.5 justify-center">
                             {u.l > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-primary/15 text-primary">L{u.l}</span>}
                             {u.e > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-secondary text-secondary-foreground">E{u.e}</span>}
+                            {u.f > 0 && <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-500/15 text-amber-600">F{u.f}</span>}
                           </div>
                         </div>
                       );
