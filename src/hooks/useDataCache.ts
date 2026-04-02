@@ -134,7 +134,7 @@ export function useFiscais(scope: 'own' | 'all' = 'own') {
         .from('fiscais')
         .select(QUERY_FISC)
         .order('criado_em', { ascending: false })
-        .limit(500);
+        .limit(scope === 'all' && isAdmin ? 2000 : 500);
 
       if (scope === 'all' && filtroMunicipioId) q = q.eq('municipio_id', filtroMunicipioId);
       q = applyScopeFilter(q, scope, isAdmin, usuario, 'fiscais');
