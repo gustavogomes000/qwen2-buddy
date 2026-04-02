@@ -108,7 +108,7 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
   ws['!cols'] = colWidths;
 
   const wb = XLSX.utils.book_new();
-  const tipoLabel = tipo ? (tipo === 'lideranca' ? 'Lideranças' : tipo === 'fiscal' ? 'Fiscais' : 'Eleitores') : 'Cadastros';
+  const tipoLabel = tipo ? (tipo === 'lideranca' ? 'Lideranças' : 'Eleitores') : 'Cadastros';
   XLSX.utils.book_append_sheet(wb, ws, tipoLabel);
 
   const fileName = `cadastros_${tipo || 'todos'}_${new Date().toISOString().slice(0, 10)}.xlsx`;

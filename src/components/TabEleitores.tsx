@@ -509,8 +509,8 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  {e.liderancas?.pessoas?.nome ? `Líder: ${e.liderancas.pessoas.nome}` : ''}{e.fiscais?.pessoas?.nome ? `${e.liderancas ? ' · ' : ''}Fiscal: ${e.fiscais.pessoas.nome}` : ''}
-                  {!e.liderancas && !e.fiscais && (e.pessoas?.zona_eleitoral ? `Z${e.pessoas.zona_eleitoral}` : '')}{!e.liderancas && !e.fiscais && (e.pessoas?.secao_eleitoral ? ` S${e.pessoas.secao_eleitoral}` : '')}
+                  {e.liderancas?.pessoas?.nome ? `Líder: ${e.liderancas.pessoas.nome}` : ''}
+                  {!e.liderancas && (e.pessoas?.zona_eleitoral ? `Z${e.pessoas.zona_eleitoral}` : '')}{!e.liderancas && (e.pessoas?.secao_eleitoral ? ` S${e.pessoas.secao_eleitoral}` : '')}
                 </p>
               </div>
               <ChevronRight size={16} className="text-muted-foreground shrink-0" />

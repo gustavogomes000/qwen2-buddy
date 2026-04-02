@@ -107,7 +107,6 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     colegio_fiscal: null as string | null,
     lideranca_nome: null as string | null,
     compromisso_voto: null as string | null,
-    fiscal_nome: null as string | null,
   });
 
   const cadastros = useMemo(() => {
