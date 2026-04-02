@@ -201,8 +201,9 @@ export default function AdminDashboard() {
     return {
       liderancas: filteredL.filter(r => r.cadastrado_por === expandedUser),
       eleitores: filteredE.filter(r => r.cadastrado_por === expandedUser),
+      fiscais: filteredF.filter(r => r.cadastrado_por === expandedUser),
     };
-  }, [expandedUser, filteredL, filteredE]);
+  }, [expandedUser, filteredL, filteredE, filteredF]);
 
   /* ── Popup user data ── */
   const popupUserData = useMemo(() => {
@@ -212,6 +213,7 @@ export default function AdminDashboard() {
       usuario: u,
       liderancas: filteredL.filter(r => r.cadastrado_por === popupUser),
       eleitores: filteredE.filter(r => r.cadastrado_por === popupUser),
+      fiscais: filteredF.filter(r => r.cadastrado_por === popupUser),
     };
   }, [popupUser, filteredL, filteredE, usuarios]);
 
