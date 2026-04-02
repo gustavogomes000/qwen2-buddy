@@ -88,9 +88,8 @@ export default function TabHierarquia() {
 
     const cadastros: CadastroItem[] = [];
 
-    const [lRes, fRes, eRes] = await Promise.all([
+    const [lRes, eRes] = await Promise.all([
       supabase.from('liderancas').select('id, status, tipo_lideranca, pessoas(nome, telefone, whatsapp)').eq('cadastrado_por', user.id).order('criado_em', { ascending: false }).limit(100),
-      supabase.from('fiscais').select('id, status, zona_fiscal, secao_fiscal, pessoas(nome, telefone, whatsapp)').eq('cadastrado_por', user.id).order('criado_em', { ascending: false }).limit(100),
       supabase.from('possiveis_eleitores').select('id, compromisso_voto, pessoas(nome, telefone, whatsapp)').eq('cadastrado_por', user.id).order('criado_em', { ascending: false }).limit(100),
     ]);
 
@@ -98,11 +97,6 @@ export default function TabHierarquia() {
       id: l.id, tipo: 'lideranca', nome: l.pessoas?.nome || '—', status: l.status,
       telefone: l.pessoas?.telefone, whatsapp: l.pessoas?.whatsapp,
       detalhes: l.tipo_lideranca || '—', cadastrado_por: user.id,
-    }));
-    (fRes.data || []).forEach((f: any) => cadastros.push({
-      id: f.id, tipo: 'fiscal', nome: f.pessoas?.nome || '—', status: f.status,
-      telefone: f.pessoas?.telefone, whatsapp: f.pessoas?.whatsapp,
-      detalhes: `Z${f.zona_fiscal || '—'} S${f.secao_fiscal || '—'}`, cadastrado_por: user.id,
     }));
     (eRes.data || []).forEach((e: any) => cadastros.push({
       id: e.id, tipo: 'eleitor', nome: e.pessoas?.nome || '—', status: e.compromisso_voto,
