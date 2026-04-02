@@ -120,7 +120,6 @@ export default function TabHierarquia() {
     const config = tipoConfig[user.tipo] || tipoConfig.lideranca;
     const Icon = config.icon;
     const totalL = userCadastros.filter(c => c.tipo === 'lideranca').length;
-    const totalF = userCadastros.filter(c => c.tipo === 'fiscal').length;
     const totalE = userCadastros.filter(c => c.tipo === 'eleitor').length;
     const supNome = getSuplenteNome(user.suplente_id);
 
