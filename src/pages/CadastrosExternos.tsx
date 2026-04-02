@@ -104,8 +104,8 @@ export default function CadastrosExternos() {
   useEffect(() => {
     const carregar = async () => {
       setLoading(true);
-      setPagina({ liderancas: 0, fiscais: 0, eleitores: 0 });
-      setDados({ liderancas: [], fiscais: [], eleitores: [] });
+      setPagina({ liderancas: 0, eleitores: 0 });
+      setDados({ liderancas: [], eleitores: [] });
 
       const dataLimite = getDataLimite(periodo);
 
