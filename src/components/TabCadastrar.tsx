@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle2, ExternalLink, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
@@ -7,6 +7,7 @@ import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
+import { addToOfflineQueue, getPendingCount } from '@/lib/offlineQueue';
 
 
 const comprometimentos = ['Alto', 'Médio', 'Baixo'];
