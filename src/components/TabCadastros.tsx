@@ -14,7 +14,7 @@ type TipoFiltro = 'todos' | 'lideranca' | 'eleitor';
 
 interface CadastroUnificado {
   id: string;
-  tipo: 'lideranca' | 'fiscal' | 'eleitor';
+  tipo: 'lideranca' | 'eleitor';
   nome: string;
   cpf: string | null;
   telefone: string | null;
@@ -44,14 +44,9 @@ interface CadastroUnificado {
   meta_votos: number | null;
   nivel_comprometimento: string | null;
   origem_captacao: string | null;
-  // Fiscal specific
-  zona_fiscal: string | null;
-  secao_fiscal: string | null;
-  colegio_fiscal: string | null;
   lideranca_nome: string | null;
   // Eleitor specific
   compromisso_voto: string | null;
-  fiscal_nome: string | null;
 }
 
 const tipoConfig = {
@@ -107,12 +102,8 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     meta_votos: null as number | null,
     nivel_comprometimento: null as string | null,
     origem_captacao: item.origem_captacao || null,
-    zona_fiscal: null as string | null,
-    secao_fiscal: null as string | null,
-    colegio_fiscal: null as string | null,
     lideranca_nome: null as string | null,
     compromisso_voto: null as string | null,
-    fiscal_nome: null as string | null,
   });
 
   const cadastros = useMemo(() => {
@@ -139,7 +130,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
           status: e.compromisso_voto, regiao: null,
           compromisso_voto: e.compromisso_voto || null,
           lideranca_nome: e.liderancas?.pessoas?.nome || null,
-          fiscal_nome: null,
+          
         });
       }
     }
@@ -346,23 +337,12 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                             </div>
                           </div>
                         )}
-                        {c.tipo === 'fiscal' && (
-                          <div>
-                            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Dados de Fiscalização</p>
-                            <div className="grid grid-cols-2 gap-1.5">
-                              <Field label="Colégio" value={c.colegio_fiscal} span2 />
-                              <Field label="Zona fiscal" value={c.zona_fiscal} />
-                              <Field label="Seção fiscal" value={c.secao_fiscal} />
-                            </div>
-                          </div>
-                        )}
                         {c.tipo === 'eleitor' && (
                           <div>
                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Vínculo do Eleitor</p>
                             <div className="grid grid-cols-2 gap-1.5">
                               <Field label="Compromisso" value={c.compromisso_voto} />
                               <Field label="Liderança" value={c.lideranca_nome} />
-                              <Field label="Fiscal" value={c.fiscal_nome} />
                             </div>
                           </div>
                         )}

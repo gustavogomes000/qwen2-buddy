@@ -22,7 +22,7 @@ const emptyForm = {
   titulo_eleitor: '', zona_eleitoral: '', secao_eleitoral: '',
   municipio_eleitoral: '', uf_eleitoral: 'GO', colegio_eleitoral: '',
   endereco_colegio: '', situacao_titulo: '',
-  lideranca_id: '', fiscal_id: '',
+  lideranca_id: '',
   compromisso_voto: 'Indefinido', observacoes: '',
 };
 
@@ -30,7 +30,6 @@ interface EleitorRow {
   id: string;
   compromisso_voto: string | null;
   lideranca_id: string | null;
-  fiscal_id: string | null;
   cadastrado_por: string | null;
   observacoes: string | null;
   criado_em: string;
@@ -43,7 +42,6 @@ interface EleitorRow {
     endereco_colegio: string | null; situacao_titulo: string | null;
   };
   liderancas: { id: string; pessoas: { nome: string } | null } | null;
-  fiscais: { id: string; pessoas: { nome: string } | null } | null;
 }
 
 interface Props {
@@ -73,7 +71,6 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const [validandoCPF, setValidandoCPF] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [liderancas, setLiderancas] = useState<{ id: string; nome: string }[]>([]);
-  const [fiscais, setFiscais] = useState<{ id: string; nome: string }[]>([]);
   const cpfTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Ligação política
@@ -120,8 +117,6 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   useEffect(() => {
     supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
       .then(({ data }) => { if (data) setLiderancas(data.map((l: any) => ({ id: l.id, nome: l.pessoas?.nome || '—' }))); });
-    supabase.from('fiscais').select('id, pessoas(nome)').eq('status', 'Ativo')
-      .then(({ data }) => { if (data) setFiscais(data.map((f: any) => ({ id: f.id, nome: f.pessoas?.nome || '—' }))); });
   }, []);
 
   const validarCPF = useCallback(async (cpfClean: string) => {
@@ -216,7 +211,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
         cadastrado_por: usuario?.id || null,
         suplente_id: ligSuplenteId || usuario?.suplente_id || null,
         lideranca_id: ligLiderancaId || form.lideranca_id || null,
-        fiscal_id: form.fiscal_id || null,
+        fiscal_id: null,
         compromisso_voto: form.compromisso_voto,
         observacoes: form.observacoes || null,
         municipio_id: ligMunicipioId || null,
@@ -236,7 +231,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
     } finally { setSaving(false); }
   };
 
-  const QUERY_DETALHE_ELE = 'id, compromisso_voto, lideranca_id, fiscal_id, cadastrado_por, observacoes, criado_em, municipio_id, pessoas(*), liderancas:lideranca_id(id, pessoas(nome)), fiscais:fiscal_id(id, pessoas(nome))';
+  const QUERY_DETALHE_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, observacoes, criado_em, municipio_id, pessoas(*), liderancas:lideranca_id(id, pessoas(nome))';
 
   const fetchDetalhe = useCallback(async (id: string) => {
     const { data } = await (supabase as any).from('possiveis_eleitores').select(QUERY_DETALHE_ELE).eq('id', id).single();
@@ -323,11 +318,10 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           <Info label="End. colégio" value={p.endereco_colegio} />
         </div>
 
-        {(e.liderancas || e.fiscais) && (
+        {e.liderancas && (
           <div className="section-card">
             <h3 className="section-title">🔗 Vinculado a</h3>
             {e.liderancas?.pessoas?.nome && <Info label="Liderança" value={e.liderancas.pessoas.nome} />}
-            {e.fiscais?.pessoas?.nome && <Info label="Fiscal" value={e.fiscais.pessoas.nome} />}
           </div>
         )}
 
@@ -514,8 +508,8 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
-                  {e.liderancas?.pessoas?.nome ? `Líder: ${e.liderancas.pessoas.nome}` : ''}{e.fiscais?.pessoas?.nome ? `${e.liderancas ? ' · ' : ''}Fiscal: ${e.fiscais.pessoas.nome}` : ''}
-                  {!e.liderancas && !e.fiscais && (e.pessoas?.zona_eleitoral ? `Z${e.pessoas.zona_eleitoral}` : '')}{!e.liderancas && !e.fiscais && (e.pessoas?.secao_eleitoral ? ` S${e.pessoas.secao_eleitoral}` : '')}
+                  {e.liderancas?.pessoas?.nome ? `Líder: ${e.liderancas.pessoas.nome}` : ''}
+                  {!e.liderancas && (e.pessoas?.zona_eleitoral ? `Z${e.pessoas.zona_eleitoral}` : '')}{!e.liderancas && (e.pessoas?.secao_eleitoral ? ` S${e.pessoas.secao_eleitoral}` : '')}
                 </p>
               </div>
               <ChevronRight size={16} className="text-muted-foreground shrink-0" />

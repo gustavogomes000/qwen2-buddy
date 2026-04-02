@@ -24,7 +24,7 @@ interface SuplenteInfo {
 
 interface CadastroItem {
   id: string;
-  tipo: 'lideranca' | 'fiscal' | 'eleitor';
+  tipo: 'lideranca' | 'eleitor';
   nome: string;
   status: string | null;
   telefone: string | null;
@@ -38,7 +38,6 @@ const tipoConfig: Record<string, { icon: typeof User; color: string; label: stri
   coordenador: { icon: Shield, color: 'text-blue-500', label: 'Coordenador' },
   suplente: { icon: User, color: 'text-purple-500', label: 'Suplente' },
   lideranca: { icon: Users, color: 'text-emerald-500', label: 'Liderança' },
-  fiscal: { icon: Eye, color: 'text-rose-500', label: 'Fiscal' },
 };
 
 export default function TabHierarquia() {
@@ -89,9 +88,8 @@ export default function TabHierarquia() {
 
     const cadastros: CadastroItem[] = [];
 
-    const [lRes, fRes, eRes] = await Promise.all([
+    const [lRes, eRes] = await Promise.all([
       supabase.from('liderancas').select('id, status, tipo_lideranca, pessoas(nome, telefone, whatsapp)').eq('cadastrado_por', user.id).order('criado_em', { ascending: false }).limit(100),
-      supabase.from('fiscais').select('id, status, zona_fiscal, secao_fiscal, pessoas(nome, telefone, whatsapp)').eq('cadastrado_por', user.id).order('criado_em', { ascending: false }).limit(100),
       supabase.from('possiveis_eleitores').select('id, compromisso_voto, pessoas(nome, telefone, whatsapp)').eq('cadastrado_por', user.id).order('criado_em', { ascending: false }).limit(100),
     ]);
 
@@ -99,11 +97,6 @@ export default function TabHierarquia() {
       id: l.id, tipo: 'lideranca', nome: l.pessoas?.nome || '—', status: l.status,
       telefone: l.pessoas?.telefone, whatsapp: l.pessoas?.whatsapp,
       detalhes: l.tipo_lideranca || '—', cadastrado_por: user.id,
-    }));
-    (fRes.data || []).forEach((f: any) => cadastros.push({
-      id: f.id, tipo: 'fiscal', nome: f.pessoas?.nome || '—', status: f.status,
-      telefone: f.pessoas?.telefone, whatsapp: f.pessoas?.whatsapp,
-      detalhes: `Z${f.zona_fiscal || '—'} S${f.secao_fiscal || '—'}`, cadastrado_por: user.id,
     }));
     (eRes.data || []).forEach((e: any) => cadastros.push({
       id: e.id, tipo: 'eleitor', nome: e.pessoas?.nome || '—', status: e.compromisso_voto,
@@ -127,7 +120,6 @@ export default function TabHierarquia() {
     const config = tipoConfig[user.tipo] || tipoConfig.lideranca;
     const Icon = config.icon;
     const totalL = userCadastros.filter(c => c.tipo === 'lideranca').length;
-    const totalF = userCadastros.filter(c => c.tipo === 'fiscal').length;
     const totalE = userCadastros.filter(c => c.tipo === 'eleitor').length;
     const supNome = getSuplenteNome(user.suplente_id);
 
@@ -150,10 +142,9 @@ export default function TabHierarquia() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'Lideranças', value: totalL, color: 'text-blue-500', icon: Users },
-            { label: 'Fiscais', value: totalF, color: 'text-purple-500', icon: Shield },
             { label: 'Eleitores', value: totalE, color: 'text-amber-500', icon: Eye },
           ].map(s => (
             <div key={s.label} className="bg-card rounded-xl border border-border p-2.5 text-center">
@@ -177,8 +168,6 @@ export default function TabHierarquia() {
             {userCadastros.map(c => {
               const typeConfig = c.tipo === 'lideranca' 
                 ? { bg: 'bg-blue-500/10', textColor: 'text-blue-600', label: 'Lid.' }
-                : c.tipo === 'fiscal'
-                ? { bg: 'bg-purple-500/10', textColor: 'text-purple-600', label: 'Fisc.' }
                 : { bg: 'bg-amber-500/10', textColor: 'text-amber-600', label: 'Eleit.' };
 
               return (

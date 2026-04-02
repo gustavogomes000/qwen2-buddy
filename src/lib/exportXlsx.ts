@@ -36,7 +36,7 @@ function formatDate(d: string | null): string {
   return new Date(d).toLocaleDateString('pt-BR');
 }
 
-export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleitor') {
+export async function exportAllCadastros(tipo?: 'lideranca' | 'eleitor') {
   const agentesMap: Record<string, string> = {};
   const { data: agentes } = await supabase.from('hierarquia_usuarios').select('id, nome');
   agentes?.forEach(a => { agentesMap[a.id] = a.nome; });
@@ -61,23 +61,6 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleito
     });
   }
 
-  if (!tipo || tipo === 'fiscal') {
-    const { data } = await supabase.from('fiscais').select('*, pessoas(*)');
-    data?.forEach((f: any) => {
-      const p = f.pessoas || {};
-      rows.push({
-        tipo: 'Fiscal', nome: p.nome || '', cpf: p.cpf || '', telefone: p.telefone || '',
-        whatsapp: p.whatsapp || '', email: p.email || '', instagram: p.instagram || '', facebook: p.facebook || '',
-        titulo_eleitor: p.titulo_eleitor || '', zona_eleitoral: p.zona_eleitoral || '',
-        secao_eleitoral: p.secao_eleitoral || '', municipio_eleitoral: p.municipio_eleitoral || '',
-        uf_eleitoral: p.uf_eleitoral || '', colegio_eleitoral: f.colegio_eleitoral || p.colegio_eleitoral || '',
-        endereco_colegio: p.endereco_colegio || '', situacao_titulo: p.situacao_titulo || '',
-        status: f.status || '', cadastrado_por_nome: agentesMap[f.cadastrado_por] || '',
-        criado_em: formatDate(f.criado_em),
-        extras: [f.zona_fiscal ? `Z${f.zona_fiscal}` : '', f.secao_fiscal ? `S${f.secao_fiscal}` : '', f.observacoes].filter(Boolean).join(' | '),
-      });
-    });
-  }
 
   if (!tipo || tipo === 'eleitor') {
     const { data } = await supabase.from('possiveis_eleitores').select('*, pessoas(*)');
@@ -125,7 +108,7 @@ export async function exportAllCadastros(tipo?: 'lideranca' | 'fiscal' | 'eleito
   ws['!cols'] = colWidths;
 
   const wb = XLSX.utils.book_new();
-  const tipoLabel = tipo ? (tipo === 'lideranca' ? 'Lideranças' : tipo === 'fiscal' ? 'Fiscais' : 'Eleitores') : 'Cadastros';
+  const tipoLabel = tipo ? (tipo === 'lideranca' ? 'Lideranças' : 'Eleitores') : 'Cadastros';
   XLSX.utils.book_append_sheet(wb, ws, tipoLabel);
 
   const fileName = `cadastros_${tipo || 'todos'}_${new Date().toISOString().slice(0, 10)}.xlsx`;

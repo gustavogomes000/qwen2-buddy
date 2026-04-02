@@ -40,19 +40,6 @@ interface LiderancaItem {
   hierarquia_usuarios: { nome: string } | null;
 }
 
-interface FiscalItem {
-  id: string;
-  status: string;
-  zona_fiscal: string | null;
-  secao_fiscal: string | null;
-  colegio_eleitoral: string | null;
-  observacoes: string | null;
-  origem_captacao: string | null;
-  criado_em: string | null;
-  pessoas: PessoaFull | null;
-  hierarquia_usuarios: { nome: string } | null;
-}
-
 interface EleitorItem {
   id: string;
   compromisso_voto: string | null;
@@ -62,11 +49,10 @@ interface EleitorItem {
   pessoas: PessoaFull | null;
   hierarquia_usuarios: { nome: string } | null;
   liderancas: { id: string; pessoas: { nome: string } | null } | null;
-  fiscais: { id: string; pessoas: { nome: string } | null } | null;
 }
 
 type ViewMode = 'suplentes' | 'detail' | 'record';
-type RecordType = 'lideranca' | 'fiscal' | 'eleitor';
+type RecordType = 'lideranca' | 'eleitor';
 
 const Info = ({ label, value, link }: { label: string; value?: string | null; link?: string }) => {
   if (!value) return null;
@@ -91,7 +77,6 @@ export default function TabRede() {
   // Detail state
   const [selectedSuplente, setSelectedSuplente] = useState<SuplenteItem | null>(null);
   const [liderancas, setLiderancas] = useState<LiderancaItem[]>([]);
-  const [fiscais, setFiscais] = useState<FiscalItem[]>([]);
   const [eleitores, setEleitores] = useState<EleitorItem[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -121,27 +106,23 @@ export default function TabRede() {
     const userIds = (usuarios || []).map(u => u.id);
 
     if (userIds.length === 0) {
-      setLiderancas([]); setFiscais([]); setEleitores([]);
+      setLiderancas([]); setEleitores([]);
       setLoadingDetail(false);
       return;
     }
 
     const orFilter = `cadastrado_por.in.(${userIds.join(',')}),suplente_id.eq.${suplente.id}`;
 
-    const [lRes, fRes, eRes] = await Promise.all([
+    const [lRes, eRes] = await Promise.all([
       (supabase as any).from('liderancas')
         .select('id, status, tipo_lideranca, nivel, regiao_atuacao, zona_atuacao, bairros_influencia, apoiadores_estimados, meta_votos, nivel_comprometimento, observacoes, origem_captacao, criado_em, pessoas(*), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)')
         .or(orFilter).order('criado_em', { ascending: false }),
-      (supabase as any).from('fiscais')
-        .select('id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, observacoes, origem_captacao, criado_em, pessoas(*), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome)')
-        .or(orFilter).order('criado_em', { ascending: false }),
       (supabase as any).from('possiveis_eleitores')
-        .select('id, compromisso_voto, observacoes, origem_captacao, criado_em, pessoas(*), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome), liderancas(id, pessoas(nome)), fiscais(id, pessoas(nome))')
+        .select('id, compromisso_voto, observacoes, origem_captacao, criado_em, pessoas(*), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome), liderancas(id, pessoas(nome))')
         .or(orFilter).order('criado_em', { ascending: false }),
     ]);
 
     setLiderancas((lRes.data || []) as LiderancaItem[]);
-    setFiscais((fRes.data || []) as FiscalItem[]);
     setEleitores((eRes.data || []) as EleitorItem[]);
     setLoadingDetail(false);
   };
@@ -171,16 +152,6 @@ export default function TabRede() {
           p?.situacao_titulo || '', l.status || '', l.hierarquia_usuarios?.nome || '',
           l.criado_em ? new Date(l.criado_em).toLocaleDateString('pt-BR') : '',
           [l.tipo_lideranca, l.nivel_comprometimento].filter(Boolean).join(' | ')]);
-      }
-      for (const f of fiscais) {
-        const p = f.pessoas;
-        allRows.push(['Fiscal', p?.nome || '', p?.cpf || '', p?.telefone || '', p?.whatsapp || '',
-          p?.email || '', p?.instagram || '', p?.facebook || '', p?.titulo_eleitor || '',
-          p?.zona_eleitoral || '', p?.secao_eleitoral || '', p?.municipio_eleitoral || '',
-          p?.uf_eleitoral || '', p?.colegio_eleitoral || '', p?.endereco_colegio || '',
-          p?.situacao_titulo || '', f.status || '', f.hierarquia_usuarios?.nome || '',
-          f.criado_em ? new Date(f.criado_em).toLocaleDateString('pt-BR') : '',
-          [f.zona_fiscal ? `Z${f.zona_fiscal}` : '', f.secao_fiscal ? `S${f.secao_fiscal}` : ''].filter(Boolean).join(' ')]);
       }
       for (const e of eleitores) {
         const p = e.pessoas;
@@ -243,7 +214,7 @@ export default function TabRede() {
             <div>
               <h2 className="text-lg font-bold text-foreground">{p?.nome || '—'}</h2>
               <p className="text-sm text-muted-foreground">
-                {tipo === 'lideranca' ? 'Liderança' : tipo === 'fiscal' ? 'Fiscal' : 'Eleitor'}
+                {tipo === 'lideranca' ? 'Liderança' : 'Eleitor'}
                 {selectedRecord.origem_captacao === 'visita_comite' && (
                   <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600">Visita</span>
                 )}
@@ -297,20 +268,10 @@ export default function TabRede() {
           </div>
         )}
 
-        {tipo === 'fiscal' && (
-          <div className="section-card">
-            <h3 className="section-title">🛡️ Dados do Fiscal</h3>
-            <Info label="Zona Fiscal" value={selectedRecord.zona_fiscal} />
-            <Info label="Seção Fiscal" value={selectedRecord.secao_fiscal} />
-            <Info label="Colégio" value={selectedRecord.colegio_eleitoral} />
-          </div>
-        )}
-
-        {tipo === 'eleitor' && (selectedRecord.liderancas || selectedRecord.fiscais) && (
+        {tipo === 'eleitor' && selectedRecord.liderancas && (
           <div className="section-card">
             <h3 className="section-title">🔗 Vinculado a</h3>
             {selectedRecord.liderancas?.pessoas?.nome && <Info label="Liderança" value={selectedRecord.liderancas.pessoas.nome} />}
-            {selectedRecord.fiscais?.pessoas?.nome && <Info label="Fiscal" value={selectedRecord.fiscais.pessoas.nome} />}
           </div>
         )}
 
@@ -331,7 +292,6 @@ export default function TabRede() {
   if (mode === 'detail' && selectedSuplente) {
     const s = selectedSuplente;
     const totalL = liderancas.length;
-    const totalF = fiscais.length;
     const totalE = eleitores.length;
     const confirmados = eleitores.filter(e => e.compromisso_voto === 'Confirmado').length;
 
@@ -362,10 +322,9 @@ export default function TabRede() {
         </div>
 
         {/* Resumo */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { icon: Users, label: 'Lideranças', value: totalL, color: 'text-blue-500' },
-            { icon: Shield, label: 'Fiscais', value: totalF, color: 'text-purple-500' },
             { icon: Eye, label: 'Eleitores', value: totalE, color: 'text-amber-500' },
             { icon: Eye, label: 'Confirm.', value: confirmados, color: 'text-emerald-500' },
           ].map(({ icon: Icon, label, value, color }) => (
@@ -378,7 +337,7 @@ export default function TabRede() {
         </div>
 
         {/* Export button for super_admin */}
-        {isSuperAdmin && (totalL + totalF + totalE) > 0 && (
+        {isSuperAdmin && (totalL + totalE) > 0 && (
           <button
             onClick={handleExport}
             disabled={exporting}
@@ -426,36 +385,6 @@ export default function TabRede() {
               )}
             </div>
 
-            {/* Fiscais */}
-            <div className="section-card">
-              <h3 className="section-title flex items-center gap-2">
-                <Shield size={16} className="text-purple-500" /> Fiscais ({totalF})
-              </h3>
-              {fiscais.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">Nenhum fiscal cadastrado</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {fiscais.map(f => (
-                    <button key={f.id} onClick={() => openRecord(f, 'fiscal')}
-                      className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-xl border border-border bg-card/50 active:scale-[0.98] transition-transform">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground truncate">{f.pessoas?.nome || '—'}</span>
-                          
-                          {f.origem_captacao === 'visita_comite' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          {[f.pessoas?.cpf ? maskCPF(f.pessoas.cpf) : null, f.pessoas?.telefone].filter(Boolean).join(' · ') || '—'}
-                        </p>
-                      </div>
-                      <ChevronRight size={14} className="text-muted-foreground shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
 
             {/* Eleitores */}
             <div className="section-card">

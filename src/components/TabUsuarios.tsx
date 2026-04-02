@@ -41,7 +41,6 @@ type SubTab = 'suplentes' | 'avulso' | 'gerenciar';
 
 const MODULOS_INLINE = [
   { id: 'cadastrar_liderancas', label: '👥 Cadastrar Lideranças' },
-  { id: 'cadastrar_fiscais', label: '🛡️ Cadastrar Fiscais' },
   { id: 'cadastrar_eleitores', label: '🎯 Cadastrar Eleitores' },
   { id: 'ver_rede', label: '🌐 Ver Rede Completa' },
 ];
@@ -663,7 +662,7 @@ export default function TabUsuarios() {
             >
               Todos ({usuarios.length})
             </button>
-            {['super_admin', 'coordenador', 'suplente', 'lideranca', 'fiscal'].map(tipo => {
+            {['super_admin', 'coordenador', 'suplente', 'lideranca'].map(tipo => {
               const count = usuarios.filter(u => u.tipo === tipo).length;
               if (count === 0) return null;
               return (
