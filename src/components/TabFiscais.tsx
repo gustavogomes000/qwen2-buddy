@@ -80,6 +80,7 @@ function useFiscais() {
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchInterval: 5000,
+    refetchIntervalInBackground: false,
   });
 }
 

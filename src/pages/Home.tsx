@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, lazy, Suspense } from 'react';
+import { useState, useRef, useCallback, lazy, Suspense, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import BottomNav, { type TabId } from '@/components/BottomNav';
@@ -11,17 +11,34 @@ import SeletorCidade from '@/components/SeletorCidade';
 import { Loader2 } from 'lucide-react';
 
 const PainelLocalizacao = lazy(() => import('@/components/PainelLocalizacao'));
+const TAB_STORAGE_KEY = 'home-active-tab';
+
+function getInitialTab(): TabId {
+  try {
+    const saved = localStorage.getItem(TAB_STORAGE_KEY) as TabId | null;
+    if (saved && ['liderancas', 'fiscais', 'eleitores', 'cadastros', 'rastreamento', 'perfil'].includes(saved)) {
+      return saved;
+    }
+  } catch {}
+  return 'liderancas';
+}
 
 export default function Home() {
   const { isAdmin, tipoUsuario } = useAuth();
   const { municipios } = useCidade();
-  const [activeTab, setActiveTab] = useState<TabId>('liderancas');
-  const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(new Set(['liderancas']));
+  const [activeTab, setActiveTab] = useState<TabId>(() => getInitialTab());
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabId>>(() => new Set([getInitialTab()]));
   const [refreshKey, setRefreshKey] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isAdminOrCoord = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const showCitySelector = isAdminOrCoord && municipios.length > 0;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TAB_STORAGE_KEY, activeTab);
+    } catch {}
+  }, [activeTab]);
 
   const handleTabChange = useCallback((tab: TabId) => {
     setActiveTab(tab);
@@ -29,7 +46,7 @@ export default function Home() {
       if (prev.has(tab)) return prev;
       return new Set([...prev, tab]);
     });
-    scrollRef.current?.scrollTo({ top: 0 });
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleSaved = useCallback(() => {
@@ -67,26 +84,10 @@ export default function Home() {
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain">
         <div className="max-w-[672px] mx-auto px-4 py-4">
-          {visitedTabs.has('liderancas') && (
-            <div className={activeTab === 'liderancas' ? '' : 'hidden'}>
-              <TabLiderancas refreshKey={refreshKey} onSaved={handleSaved} />
-            </div>
-          )}
-          {visitedTabs.has('fiscais') && (
-            <div className={activeTab === 'fiscais' ? '' : 'hidden'}>
-              <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />
-            </div>
-          )}
-          {visitedTabs.has('eleitores') && (
-            <div className={activeTab === 'eleitores' ? '' : 'hidden'}>
-              <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />
-            </div>
-          )}
-          {visitedTabs.has('cadastros') && (
-            <div className={activeTab === 'cadastros' ? '' : 'hidden'}>
-              <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />
-            </div>
-          )}
+          {visitedTabs.has('liderancas') && activeTab === 'liderancas' && <TabLiderancas refreshKey={refreshKey} onSaved={handleSaved} />}
+          {visitedTabs.has('fiscais') && activeTab === 'fiscais' && <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />}
+          {visitedTabs.has('eleitores') && activeTab === 'eleitores' && <TabEleitores refreshKey={refreshKey} onSaved={handleSaved} />}
+          {visitedTabs.has('cadastros') && activeTab === 'cadastros' && <TabCadastros refreshKey={refreshKey} onSaved={handleSaved} />}
           {activeTab === 'rastreamento' && (
             <Suspense fallback={
               <div className="flex flex-col items-center justify-center py-16 gap-3">
