@@ -120,7 +120,8 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
     enabled: !!usuario,
     staleTime: 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchInterval: 5000,
+    refetchInterval: scope === 'all' ? 15000 : 5000,
+    refetchIntervalInBackground: false,
   });
 }
 
