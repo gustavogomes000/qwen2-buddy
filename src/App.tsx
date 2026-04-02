@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,10 +9,10 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { startAutoSync, syncOfflineData } from "@/services/offlineSync";
 
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import AdminDashboard from "./pages/AdminDashboard";
-import CadastrosExternos from "./pages/CadastrosExternos";
+const Login = lazy(() => import("./pages/Login"));
+const Home = lazy(() => import("./pages/Home"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const CadastrosExternos = lazy(() => import("./pages/CadastrosExternos"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
