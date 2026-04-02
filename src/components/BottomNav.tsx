@@ -67,29 +67,35 @@ export default function BottomNav({ active, onChange }: Props) {
       <div className="max-w-[672px] mx-auto flex justify-around items-center h-16 overflow-x-auto scrollbar-hide">
         {tabs.map(({ id, icon: Icon, label }) => {
           const isActive = active === id;
-          return (
+
+          // Insert Painel button right before Perfil
+          const painelBtn = id === 'perfil' && isAdmin ? (
             <button
-              key={id}
-              data-testid={`nav-${id}`}
-              onClick={() => onChange(id)}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all active:scale-90 shrink-0 ${
-                isActive ? 'text-primary' : 'text-muted-foreground'
-              }`}
+              key="painel"
+              onClick={() => navigate('/admin')}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all active:scale-90 text-muted-foreground shrink-0"
             >
-              <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
-              <span className={`text-[9px] ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
+              <BarChart3 size={20} strokeWidth={1.5} />
+              <span className="text-[9px] font-medium">Painel</span>
             </button>
+          ) : null;
+
+          return (
+            <span key={id} className="contents">
+              {painelBtn}
+              <button
+                data-testid={`nav-${id}`}
+                onClick={() => onChange(id)}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all active:scale-90 shrink-0 ${
+                  isActive ? 'text-primary' : 'text-muted-foreground'
+                }`}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+                <span className={`text-[9px] ${isActive ? 'font-bold' : 'font-medium'}`}>{label}</span>
+              </button>
+            </span>
           );
         })}
-        {isAdmin && (
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all active:scale-90 text-muted-foreground shrink-0"
-          >
-            <BarChart3 size={20} strokeWidth={1.5} />
-            <span className="text-[9px] font-medium">Painel</span>
-          </button>
-        )}
       </div>
     </nav>
   );
