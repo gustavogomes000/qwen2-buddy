@@ -364,12 +364,12 @@ export default function TabCriarUsuarios() {
               return (
                 <div key={l.id} className="bg-card rounded-xl border border-border p-3 flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    temUsuario ? 'bg-emerald-500/10' : 'bg-blue-500/10'
+                    temUsuario ? 'bg-emerald-500/10' : 'bg-amber-500/10'
                   }`}>
                     {temUsuario ? (
                       <CheckCircle2 size={18} className="text-emerald-500" />
                     ) : (
-                      <Users size={18} className="text-blue-500" />
+                      <Users size={18} className="text-amber-500" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
