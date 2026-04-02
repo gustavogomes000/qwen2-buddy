@@ -71,8 +71,6 @@ export default function BottomNav({ active, onChange }: Props) {
     if (tab.id === 'perfil') return true;
     // Cadastros (meus cadastros) - visible to everyone
     if (tab.id === 'cadastros') return true;
-    // Rastreamento - super_admin only
-    if (tab.id === 'rastreamento') return isSuperAdmin;
     // Module-based tabs
     if (tab.module) {
       if (isAdminOrCoord) return true;
