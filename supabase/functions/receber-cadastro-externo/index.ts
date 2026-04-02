@@ -40,6 +40,13 @@ function jsonResp(body: Record<string, unknown>, status = 200) {
   });
 }
 
+const TIPOS_HIERARQUIA = ['super_admin', 'coordenador', 'lideranca', 'fiscal'] as const;
+const TIPOS_SOMBRA = new Set(['coordenador', 'lideranca', 'fiscal']);
+
+function normalizeName(value?: string | null) {
+  return value?.trim().replace(/\s+/g, ' ') ?? '';
+}
+
 async function resolverAdminFallback(supabaseAdmin: any): Promise<string | null> {
   const { data } = await supabaseAdmin
     .from('hierarquia_usuarios')
@@ -49,6 +56,55 @@ async function resolverAdminFallback(supabaseAdmin: any): Promise<string | null>
     .limit(1)
     .maybeSingle();
   return data?.id ?? null;
+}
+
+async function resolverHierarquiaPorNome(supabaseAdmin: any, nome: string | null | undefined, tipo?: string | null) {
+  const nomeNormalizado = normalizeName(nome);
+  if (!nomeNormalizado) return null;
+
+  let query = supabaseAdmin
+    .from('hierarquia_usuarios')
+    .select('id, nome, tipo, suplente_id, municipio_id')
+    .eq('ativo', true)
+    .limit(1);
+
+  if (tipo && TIPOS_HIERARQUIA.includes(tipo as any)) {
+    query = query.eq('tipo', tipo);
+  }
+
+  const { data: exato } = await query.ilike('nome', nomeNormalizado).maybeSingle();
+  if (exato) return exato;
+
+  const { data: aproximado } = await supabaseAdmin
+    .from('hierarquia_usuarios')
+    .select('id, nome, tipo, suplente_id, municipio_id')
+    .eq('ativo', true)
+    .ilike('nome', `%${nomeNormalizado}%`)
+    .limit(1)
+    .maybeSingle();
+
+  return aproximado ?? null;
+}
+
+async function garantirUsuarioSombra(supabaseAdmin: any, nome: string | null | undefined, tipo: string | null | undefined, municipioId: string | null) {
+  const nomeNormalizado = normalizeName(nome);
+  if (!nomeNormalizado || !tipo || !TIPOS_SOMBRA.has(tipo)) return null;
+
+  const existente = await resolverHierarquiaPorNome(supabaseAdmin, nomeNormalizado, tipo);
+  if (existente) return existente;
+
+  const { data, error } = await supabaseAdmin
+    .from('hierarquia_usuarios')
+    .insert({ nome: nomeNormalizado, tipo, ativo: true, municipio_id: municipioId ?? null })
+    .select('id, nome, tipo, suplente_id, municipio_id')
+    .single();
+
+  if (error) {
+    console.error('[receber-cadastro-externo] Erro ao criar usuário sombra:', error);
+    return null;
+  }
+
+  return data;
 }
 
 Deno.serve(async (req) => {
