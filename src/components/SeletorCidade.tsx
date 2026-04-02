@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ContagemCidade {
   liderancas: number;
-  fiscais: number;
   eleitores: number;
   usuarios: number;
 }
