@@ -283,7 +283,7 @@ export default function AdminDashboard() {
         {/* ── Tab navigation ── */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           {vistaLabels.map(({ id, icon: Icon, label }) => (
-            <button key={id} onClick={() => { setVistaAtiva(id); setSearchTerm(''); setExpandedUser(null); }}
+            <button key={id} onClick={() => { setVistaAtiva(id); setSearchTerm(''); setRankingSearch(''); setExpandedUser(null); setTipoFiltro('todos'); setRankingTipoUsuario('todos'); }}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 ${
                 vistaAtiva === id ? 'gradient-primary text-white shadow-sm' : 'bg-muted text-muted-foreground'
               }`}>
