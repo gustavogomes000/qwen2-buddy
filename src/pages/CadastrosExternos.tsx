@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Search, Users, Shield, Target, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, Users, Target, Loader2 } from 'lucide-react';
 import { maskCPF } from '@/lib/cpf';
 import SkeletonLista from '@/components/SkeletonLista';
 
