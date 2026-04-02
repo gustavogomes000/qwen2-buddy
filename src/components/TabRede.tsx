@@ -367,9 +367,6 @@ export default function TabRede() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-foreground truncate">{l.pessoas?.nome || '—'}</span>
                           
-                          {l.origem_captacao === 'visita_comite' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
-                          )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
                           {[l.pessoas?.cpf ? maskCPF(l.pessoas.cpf) : null, l.pessoas?.telefone].filter(Boolean).join(' · ') || l.tipo_lideranca || '—'}
