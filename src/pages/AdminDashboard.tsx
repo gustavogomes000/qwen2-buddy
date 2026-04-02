@@ -65,12 +65,12 @@ interface HierarquiaUsuario {
 
 /* ── constants ── */
 type Periodo = 'hoje' | 'semana' | 'mes' | 'total';
-type TipoFiltro = 'todos' | 'lideranca' | 'eleitor';
+type TipoFiltro = 'todos' | 'lideranca' | 'eleitor' | 'fiscal';
 type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'externas';
 type TipoUsuarioFiltro = 'todos' | 'suplente' | 'lideranca' | 'coordenador';
 
 const periodoLabels: Record<Periodo, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês', total: 'Total' };
-const tipoFiltroLabels: Record<TipoFiltro, string> = { todos: 'Todos', lideranca: 'Lideranças', eleitor: 'Eleitores' };
+const tipoFiltroLabels: Record<TipoFiltro, string> = { todos: 'Todos', lideranca: 'Lideranças', eleitor: 'Eleitores', fiscal: 'Fiscais' };
 const tipoUsuarioLabels: Record<TipoUsuarioFiltro, string> = { todos: 'Todos', suplente: 'Suplentes', lideranca: 'Lideranças', coordenador: 'Coordenadores' };
 
 const tipoLabel = (t: string) => {
