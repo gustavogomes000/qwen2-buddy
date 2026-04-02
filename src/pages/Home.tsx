@@ -8,6 +8,7 @@ import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
 import TabPerfil from '@/components/TabPerfil';
 import SeletorCidade from '@/components/SeletorCidade';
+import { useRealtimeSync } from '@/hooks/useDataCache';
 import { Loader2 } from 'lucide-react';
 
 const PainelLocalizacao = lazy(() => import('@/components/PainelLocalizacao'));
