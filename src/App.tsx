@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CidadeProvider } from "@/contexts/CidadeContext";
 import LoadingScreen from "@/components/LoadingScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { startAutoSync, syncOfflineData } from "@/services/offlineSync";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -50,6 +52,22 @@ function AppRoutes() {
   );
 }
 
+function OfflineSyncManager() {
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    if (!user) return;
+    startAutoSync();
+    
+    // Listen for SW sync messages
+    const handler = () => syncOfflineData();
+    window.addEventListener('sync-offline-data', handler);
+    return () => window.removeEventListener('sync-offline-data', handler);
+  }, [user]);
+  
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -58,6 +76,7 @@ const App = () => (
         <AuthProvider>
           <CidadeProvider>
             <ErrorBoundary>
+              <OfflineSyncManager />
               <AppRoutes />
             </ErrorBoundary>
           </CidadeProvider>

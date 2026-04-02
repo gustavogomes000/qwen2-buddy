@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCircle, BarChart3, MapPin, Target, List, Search } from 'lucide-react';
+import { Users, UserCircle, BarChart3, MapPin, Target, List, Search, WifiOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { getPendingCount } from '@/lib/offlineQueue';
+import { onSyncStatusChange } from '@/services/offlineSync';
 
 export type TabId = 'liderancas' | 'fiscais' | 'eleitores' | 'cadastros' | 'rastreamento' | 'perfil';
 
@@ -25,6 +27,26 @@ export default function BottomNav({ active, onChange }: Props) {
   const navigate = useNavigate();
   const [modulos, setModulos] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Track online/offline status
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => { window.removeEventListener('offline', goOffline); window.removeEventListener('online', goOnline); };
+  }, []);
+
+  // Track pending offline registrations
+  useEffect(() => {
+    const refresh = () => getPendingCount().then(setPendingCount);
+    refresh();
+    const interval = setInterval(refresh, 5000);
+    const unsub = onSyncStatusChange(refresh);
+    return () => { clearInterval(interval); unsub(); };
+  }, []);
 
   useEffect(() => {
     if (!usuario?.id) return;
@@ -69,6 +91,13 @@ export default function BottomNav({ active, onChange }: Props) {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-xl border-t border-border safe-bottom">
+      {/* Offline banner */}
+      {(isOffline || pendingCount > 0) && (
+        <div className={`flex items-center justify-center gap-2 py-1.5 text-xs font-medium ${isOffline ? 'bg-destructive/10 text-destructive' : 'bg-amber-500/10 text-amber-600'}`}>
+          {isOffline && <><WifiOff size={14} /> Sem internet</>}
+          {pendingCount > 0 && <span>• {pendingCount} cadastro{pendingCount > 1 ? 's' : ''} pendente{pendingCount > 1 ? 's' : ''}</span>}
+        </div>
+      )}
       <div className="max-w-[672px] mx-auto flex justify-around items-center h-16 overflow-x-auto scrollbar-hide">
         {tabs.map(({ id, icon: Icon, label }) => {
           const isActive = active === id;
