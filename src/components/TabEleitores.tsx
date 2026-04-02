@@ -30,7 +30,6 @@ interface EleitorRow {
   id: string;
   compromisso_voto: string | null;
   lideranca_id: string | null;
-  fiscal_id: string | null;
   cadastrado_por: string | null;
   observacoes: string | null;
   criado_em: string;
@@ -43,7 +42,6 @@ interface EleitorRow {
     endereco_colegio: string | null; situacao_titulo: string | null;
   };
   liderancas: { id: string; pessoas: { nome: string } | null } | null;
-  fiscais: { id: string; pessoas: { nome: string } | null } | null;
 }
 
 interface Props {
