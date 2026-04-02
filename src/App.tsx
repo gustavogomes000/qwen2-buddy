@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CidadeProvider } from "@/contexts/CidadeContext";
 import LoadingScreen from "@/components/LoadingScreen";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -56,7 +57,9 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CidadeProvider>
-            <AppRoutes />
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
           </CidadeProvider>
         </AuthProvider>
       </BrowserRouter>

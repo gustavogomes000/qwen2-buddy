@@ -215,6 +215,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
       <div className="relative">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
+          data-testid="input-busca-cadastros"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Buscar por nome, CPF, telefone ou agente..."
@@ -223,7 +224,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
       </div>
 
       {/* Export */}
-      <button onClick={handleExport} disabled={exporting}
+      <button data-testid="btn-exportar" onClick={handleExport} disabled={exporting}
         className="w-full h-9 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
         {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
         Exportar {tipoFiltro === 'todos' ? 'Todos' : tipoConfig[tipoFiltro].label + 's'} (Excel)

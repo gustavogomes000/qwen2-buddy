@@ -395,7 +395,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   if (mode === 'form' && !viewOnly) {
     return (
       <div key="form" className="space-y-4 pb-24">
-        <button onClick={() => setMode('list')} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
+        <button data-testid="btn-voltar" onClick={() => setMode('list')} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
           <ArrowLeft size={16} /> Voltar
         </button>
         <div className="section-card">
@@ -475,7 +475,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
           cidadeAtivaId={cidadeAtiva?.id || null}
         />
 
-        <button onClick={handleSave} disabled={saving}
+        <button data-testid="btn-salvar-lideranca" onClick={handleSave} disabled={saving}
           className="w-full h-14 gradient-primary text-white text-base font-semibold rounded-2xl shadow-lg shadow-pink-500/25 active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
           {saving ? <><Loader2 size={20} className="animate-spin" /> Salvando...</> : '✅ Cadastrar Liderança'}
         </button>
@@ -487,7 +487,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   return (
     <div className="space-y-3 pb-24">
       {!viewOnly && (
-        <button onClick={() => { setForm({ ...emptyForm }); setPessoaExistenteId(null); setCpfStatus('idle'); setMode('form'); }}
+        <button data-testid="btn-cadastrar-lideranca" onClick={() => { setForm({ ...emptyForm }); setPessoaExistenteId(null); setCpfStatus('idle'); setMode('form'); }}
           className="w-full h-12 gradient-primary text-white font-semibold rounded-xl active:scale-[0.97] transition-all flex items-center justify-center gap-2">
           <PlusCircle size={18} /> Cadastrar Liderança
         </button>
@@ -495,7 +495,7 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..."
+        <input data-testid="input-busca-lideranca" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..."
           className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
 

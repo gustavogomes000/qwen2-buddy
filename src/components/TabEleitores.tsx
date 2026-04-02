@@ -345,7 +345,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   if (mode === 'form' && !viewOnly) {
     return (
       <div key="form" className="space-y-4 pb-24">
-        <button onClick={() => setMode('list')} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
+        <button data-testid="btn-voltar" onClick={() => setMode('list')} className="flex items-center gap-1 text-sm text-muted-foreground active:scale-95">
           <ArrowLeft size={16} /> Voltar
         </button>
 
@@ -444,7 +444,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           <h2 className="section-title">📋 Informações Adicionais</h2>
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Compromisso de voto</label>
-            <select value={form.compromisso_voto} onChange={e => update('compromisso_voto', e.target.value)} className={selectCls}>
+            <select data-testid="select-compromisso-voto" value={form.compromisso_voto} onChange={e => update('compromisso_voto', e.target.value)} className={selectCls}>
               {compromissoOptions.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
@@ -454,7 +454,7 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
           </div>
         </div>
 
-        <button onClick={handleSave} disabled={saving}
+        <button data-testid="btn-salvar-eleitor" onClick={handleSave} disabled={saving}
           className="w-full h-14 gradient-primary text-white text-base font-semibold rounded-2xl shadow-lg shadow-pink-500/25 active:scale-[0.97] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
           {saving ? <><Loader2 size={20} className="animate-spin" /> Salvando...</> : '✅ Salvar Eleitor'}
         </button>
@@ -466,13 +466,13 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   return (
     <div className="space-y-3 pb-24">
       {!viewOnly && (
-        <button onClick={() => setMode('form')} className="w-full h-12 gradient-primary text-white font-semibold rounded-xl active:scale-[0.97] transition-all">
+        <button data-testid="btn-cadastrar-eleitor" onClick={() => setMode('form')} className="w-full h-12 gradient-primary text-white font-semibold rounded-xl active:scale-[0.97] transition-all">
           + Cadastrar Eleitor
         </button>
       )}
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
+        <input data-testid="input-busca-eleitor" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..." className="w-full h-11 pl-9 pr-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
       </div>
       <div className="grid grid-cols-3 gap-2">
         {[

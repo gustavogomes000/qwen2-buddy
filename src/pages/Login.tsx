@@ -90,6 +90,7 @@ export default function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <input
+                data-testid="input-nome"
                 type="text"
                 placeholder="Seu nome de acesso"
                 value={username}
@@ -111,6 +112,7 @@ export default function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               <input
+                data-testid="input-senha"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
@@ -141,6 +143,7 @@ export default function Login() {
           </div>
 
           <button
+            data-testid="btn-entrar"
             type="submit"
             disabled={loading}
             className="w-full h-11 rounded-lg font-semibold text-sm text-white transition-all active:scale-[0.98] disabled:opacity-60"
