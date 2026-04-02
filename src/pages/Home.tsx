@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import BottomNav, { type TabId } from '@/components/BottomNav';
 import TabLiderancas from '@/components/TabLiderancas';
+import TabFiscais from '@/components/TabFiscais';
 import TabEleitores from '@/components/TabEleitores';
 import TabCadastros from '@/components/TabCadastros';
 import TabPerfil from '@/components/TabPerfil';
@@ -37,6 +38,7 @@ export default function Home() {
 
   const titles: Record<TabId, string> = {
     liderancas: 'Cadastro de Lideranças',
+    fiscais: 'Cadastro de Fiscais',
     eleitores: 'Cadastro de Eleitores',
     cadastros: isAdmin ? 'Todos os Cadastros' : 'Meus Cadastros',
     rastreamento: 'Rastreamento',
@@ -68,6 +70,11 @@ export default function Home() {
           {visitedTabs.has('liderancas') && (
             <div className={activeTab === 'liderancas' ? '' : 'hidden'}>
               <TabLiderancas refreshKey={refreshKey} onSaved={handleSaved} />
+            </div>
+          )}
+          {visitedTabs.has('fiscais') && (
+            <div className={activeTab === 'fiscais' ? '' : 'hidden'}>
+              <TabFiscais refreshKey={refreshKey} onSaved={handleSaved} />
             </div>
           )}
           {visitedTabs.has('eleitores') && (
