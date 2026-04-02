@@ -514,10 +514,9 @@ export default function TabSuplentes({ refreshKey }: Props) {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { label: 'Lideranças', value: stats.liderancas, color: 'text-blue-500' },
-            { label: 'Fiscais', value: stats.fiscais, color: 'text-purple-500' },
             { label: 'Eleitores', value: stats.eleitores, color: 'text-amber-500' },
           ].map(s => (
             <div key={s.label} className="bg-card rounded-xl border border-border p-2.5 text-center">
