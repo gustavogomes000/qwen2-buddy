@@ -176,7 +176,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const tipo = tipoFiltro === 'todos' ? undefined : (tipoFiltro === 'lideranca' ? 'lideranca' : tipoFiltro === 'fiscal' ? 'fiscal' : 'eleitor') as any;
+      const tipo = tipoFiltro === 'todos' ? undefined : (tipoFiltro as 'lideranca' | 'eleitor');
       const count = await exportAllCadastros(tipo);
       toast({ title: `✅ ${count} registros exportados!` });
     } catch (err: any) {
