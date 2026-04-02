@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CidadeProvider } from "@/contexts/CidadeContext";
 import LoadingScreen from "@/components/LoadingScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { startAutoSync, syncOfflineData } from "@/services/offlineSync";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
