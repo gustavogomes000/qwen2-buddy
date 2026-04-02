@@ -12,6 +12,8 @@ const keys = {
     ['eleitores', munId, scope] as const,
   usuarios: () => ['hierarquia_usuarios'] as const,
   contagens: (munId: string | null) => ['contagens', munId] as const,
+  fiscais: (munId: string | null, scope: string) =>
+    ['fiscais', munId, scope] as const,
 };
 
 /* ── Shared filter logic ── */
@@ -156,6 +158,45 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
     staleTime: 3_000,
     gcTime: 10 * 60 * 1000,
     refetchInterval: scope === 'all' ? 10000 : 5000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+
+/* ── Fiscais ── */
+const QUERY_FIS = 'id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, cadastrado_por, suplente_id, criado_em, observacoes, origem_captacao, municipio_id, lideranca_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome), liderancas:lideranca_id(id, pessoas(nome))';
+
+export function useFiscaisAdmin() {
+  const { usuario, tipoUsuario } = useAuth();
+  const filtroMunicipioId = useFiltroMunicipio();
+  const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
+
+  return useQuery({
+    queryKey: keys.fiscais(filtroMunicipioId, 'all'),
+    queryFn: async () => {
+      let q = (supabase as any)
+        .from('fiscais')
+        .select(QUERY_FIS)
+        .order('criado_em', { ascending: false })
+        .limit(2000);
+
+      if (filtroMunicipioId) q = q.or(`municipio_id.eq.${filtroMunicipioId},municipio_id.is.null`);
+      if (!isAdmin) {
+        if (usuario?.suplente_id) {
+          q = q.or(`cadastrado_por.eq.${usuario.id},suplente_id.eq.${usuario.suplente_id}`);
+        } else {
+          q = q.eq('cadastrado_por', usuario?.id);
+        }
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!usuario,
+    staleTime: 3_000,
+    gcTime: 10 * 60 * 1000,
+    refetchInterval: 10000,
     refetchIntervalInBackground: false,
   });
 }
