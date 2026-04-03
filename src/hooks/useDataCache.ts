@@ -189,10 +189,8 @@ export function useFiscaisAdmin() {
       return data || [];
     },
     enabled: !!usuario,
-    staleTime: 3_000,
-    gcTime: 10 * 60 * 1000,
-    refetchInterval: 10000,
-    refetchIntervalInBackground: false,
+    staleTime: 60_000,
+    gcTime: 15 * 60 * 1000,
   });
 }
 
