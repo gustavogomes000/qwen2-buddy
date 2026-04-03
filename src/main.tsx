@@ -1,6 +1,26 @@
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
 import App from "./App.tsx";
 import "./index.css";
+
+// ── Sentry ──────────────────────────────────────────
+const isProduction = import.meta.env.PROD;
+
+if (isProduction) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN || "",
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+    ],
+    // Performance: 20% das transações em prod (ajustar depois com dados reais)
+    tracesSampleRate: 0.2,
+    // Session Replay: 10% das sessões normais, 100% das sessões com erro
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    environment: "production",
+  });
+}
 
 const isInIframe = (() => {
   try {
