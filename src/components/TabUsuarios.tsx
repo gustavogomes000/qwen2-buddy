@@ -85,6 +85,10 @@ export default function TabUsuarios() {
   // Modules view
   const [viewingModules, setViewingModules] = useState<HierarchyUser | null>(null);
 
+  // Location history
+  const [locHistory, setLocHistory] = useState<any[]>([]);
+  const [locLoading, setLocLoading] = useState(false);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     const [supRes, lidRes, usrRes] = await Promise.all([
