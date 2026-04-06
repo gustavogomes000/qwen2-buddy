@@ -12,6 +12,9 @@ import {
 } from 'lucide-react';
 import { exportAllCadastros, exportCadastrosFiltered } from '@/lib/exportXlsx';
 import SeletorCidade from '@/components/SeletorCidade';
+import { lazy, Suspense } from 'react';
+
+const TabLocalizacoes = lazy(() => import('@/components/TabLocalizacoes'));
 
 
 /* ── types ── */
@@ -66,7 +69,7 @@ interface HierarquiaUsuario {
 /* ── constants ── */
 type Periodo = 'hoje' | 'semana' | 'mes' | 'total';
 type TipoFiltro = 'todos' | 'lideranca' | 'eleitor' | 'fiscal';
-type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades';
+type VistaAtiva = 'usuarios' | 'ranking' | 'registros' | 'cidades' | 'localizacao';
 type TipoUsuarioFiltro = 'todos' | 'suplente' | 'lideranca' | 'coordenador';
 
 const periodoLabels: Record<Periodo, string> = { hoje: 'Hoje', semana: 'Semana', mes: 'Mês', total: 'Total' };
@@ -229,7 +232,7 @@ export default function AdminDashboard() {
     { id: 'ranking', icon: Trophy, label: 'Ranking' },
     { id: 'usuarios', icon: UserCog, label: 'Usuários' },
     { id: 'registros', icon: Eye, label: 'Registros' },
-    
+    { id: 'localizacao', icon: MapPin, label: 'Localização' },
     ...(municipios.length > 1 ? [{ id: 'cidades' as VistaAtiva, icon: Building2, label: 'Cidades' }] : []),
   ];
 
@@ -811,6 +814,13 @@ export default function AdminDashboard() {
               );
             })}
           </div>
+        )}
+
+        {/* ══════════ LOCALIZAÇÃO ══════════ */}
+        {vistaAtiva === 'localizacao' && (
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-primary" /></div>}>
+            <TabLocalizacoes />
+          </Suspense>
         )}
 
 
