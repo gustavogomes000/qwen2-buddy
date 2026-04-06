@@ -816,6 +816,13 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ══════════ LOCALIZAÇÃO ══════════ */}
+        {vistaAtiva === 'localizacao' && (
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-primary" /></div>}>
+            <TabLocalizacoes />
+          </Suspense>
+        )}
+
 
       </div>
 
