@@ -1,25 +1,22 @@
+## Fase 1 — Limpeza (remover features) ✅
+- Remover aba de Rastreamento e componente TrackingMap
+- Remover recebimento de cadastros externos
+- Remover serviço locationTracker e offlineSync relacionado a rastreamento
+- Limpar imports e referências no código
 
-## Fase 2 — Permissões (já parcialmente implementado)
-A lógica de `resolverLigacaoPolitica` e `CampoLigacaoPolitica` já cuida dos 3 fluxos (Suplente bloqueado, Liderança bloqueado, Coordenador/Admin editável). **Ajuste necessário**: Para Coordenador, filtrar busca de suplentes/lideranças para mostrar SOMENTE os que vieram do sistema externo E que são usuários do sistema (têm `auth_user_id` na `hierarquia_usuarios`).
+## Fase 2 — Ajustar permissões e roles ✅
+- **Admin Master**: mantém tudo como está (painel, criar eventos, gerenciar usuários)
+- **Suplente/Liderança**: cadastra vinculado automaticamente a si mesmo (via resolverLigacaoPolitica)
+- **Coordenador**: campo editável com busca de suplentes/lideranças
+- Lógica implementada em CampoLigacaoPolitica + resolverLigacaoPolitica
 
-## Fase 3 — Sistema de Eventos
+## Fase 3 — Sistema de Eventos ✅ (código pronto, migração pendente)
+- **EventoContext** com persistência localStorage
+- **SeletorEvento** no header (Home + AdminDashboard)
+- **GerenciarEventos** (CRUD) na aba Eventos do AdminDashboard
+- evento_id injetado automaticamente nos formulários (TabCadastrar, TabFiscais, TabEleitores)
+- ⚠️ **MIGRAÇÃO SQL PENDENTE** — executar no SQL Editor do Supabase
 
-### 1. Migração SQL
-- Criar tabela `eventos` (id, nome, local, descricao, criado_por, ativo, criado_em, atualizado_em)
-- Adicionar coluna `evento_id` (nullable FK) em: `liderancas`, `fiscais`, `possiveis_eleitores`
-- RLS: admin full, autenticados lêem eventos ativos
-
-### 2. Contexto de Evento Ativo
-- Criar `EventoContext` com estado do evento selecionado (localStorage para persistência)
-- Admin e Coordenador veem seletor de evento no header
-
-### 3. Admin CRUD de Eventos
-- Nova seção no AdminDashboard para criar/editar/remover eventos
-
-### 4. Injetar evento_id nos formulários
-- TabCadastrar (lideranças): incluir `evento_id` do contexto no `registroData`
-- TabFiscais: idem
-- TabEleitores: idem
-
-### 5. Filtros por evento no dashboard
-- Adicionar filtro por evento no ranking/registros
+## Fase 4 — Reorganizar painéis ✅
+- Dashboard com Ranking, Usuários, Registros, Eventos, Localização, Cidades
+- Filtros por período e tipo de usuário
