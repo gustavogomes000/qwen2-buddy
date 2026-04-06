@@ -69,13 +69,17 @@ Deno.serve(async (req) => {
 
     if (acao === 'atualizar') {
       const updates: Record<string, any> = {};
+      const hasValidAuth = auth_user_id && typeof auth_user_id === 'string' && auth_user_id.length === 36;
 
       if (novo_nome) {
         updates.nome = novo_nome.trim();
-        // Only update auth email if auth_user_id is a valid UUID
-        if (auth_user_id && auth_user_id.length === 36) {
-          const newEmail = novo_nome.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '') + '@rede.sarelli.com';
-          await supabaseAdmin.auth.admin.updateUserById(auth_user_id, { email: newEmail });
+        if (hasValidAuth) {
+          try {
+            const newEmail = novo_nome.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '') + '@rede.sarelli.com';
+            await supabaseAdmin.auth.admin.updateUserById(auth_user_id, { email: newEmail });
+          } catch (emailErr) {
+            console.error('Erro ao atualizar email:', emailErr);
+          }
         }
       }
 
@@ -84,11 +88,12 @@ Deno.serve(async (req) => {
       }
 
       if (Object.keys(updates).length > 0) {
-        await supabaseAdmin.from('hierarquia_usuarios').update(updates).eq('id', hierarquia_id);
+        const { error: updateErr } = await supabaseAdmin.from('hierarquia_usuarios').update(updates).eq('id', hierarquia_id);
+        if (updateErr) throw updateErr;
       }
 
       if (nova_senha) {
-        if (!auth_user_id || auth_user_id.length !== 36) {
+        if (!hasValidAuth) {
           return new Response(
             JSON.stringify({ error: 'Usuário sem conta de autenticação vinculada. Não é possível alterar a senha.' }),
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
