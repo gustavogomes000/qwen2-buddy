@@ -271,6 +271,9 @@ export default function AdminDashboard() {
             <SeletorCidade />
           </div>
         )}
+        <div className="max-w-3xl mx-auto px-4 pb-2">
+          <SeletorEvento />
+        </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
@@ -762,6 +765,11 @@ export default function AdminDashboard() {
               Exportar {tipoFiltro === 'todos' ? 'Todos' : tipoFiltroLabels[tipoFiltro]} (Excel)
             </button>
           </div>
+        )}
+
+        {/* ══════════ EVENTOS ══════════ */}
+        {vistaAtiva === 'eventos' && (
+          <GerenciarEventos />
         )}
 
         {/* ══════════ CIDADES ══════════ */}
