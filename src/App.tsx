@@ -128,40 +128,43 @@ function PwaUpdatePrompt() {
   );
 }
 
-const App = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{
-      persister: idbPersister,
-      maxAge: 24 * 60 * 60 * 1000, // 24h
-      buster: '', // Change this to invalidate all persisted caches
-      dehydrateOptions: {
-        shouldDehydrateQuery: (query) => {
-          // Only persist queries whose key starts with one of our critical prefixes
-          const key = query.queryKey[0];
-          if (typeof key !== 'string') return false;
-          return PERSISTED_QUERY_PREFIXES.includes(key) && query.state.status === 'success';
+const App = forwardRef<HTMLDivElement>(function App(_props, _ref) {
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: idbPersister,
+        maxAge: 24 * 60 * 60 * 1000,
+        buster: '',
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const key = query.queryKey[0];
+            if (typeof key !== 'string') return false;
+            return PERSISTED_QUERY_PREFIXES.includes(key) && query.state.status === 'success';
+          },
         },
-      },
-    }}
-  >
-    <TooltipProvider>
-      <Toaster />
-      <Analytics />
-      <SpeedInsights />
-      <BrowserRouter>
-        <AuthProvider>
-          <CidadeProvider>
-            <ErrorBoundary>
-              <PwaUpdatePrompt />
-              <OfflineSyncManager />
-              <AppRoutes />
-            </ErrorBoundary>
-          </CidadeProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </PersistQueryClientProvider>
-);
+      }}
+    >
+      <TooltipProvider>
+        <Toaster />
+        <Analytics />
+        <SpeedInsights />
+        <BrowserRouter>
+          <AuthProvider>
+            <CidadeProvider>
+              <ErrorBoundary>
+                <PwaUpdatePrompt />
+                <OfflineSyncManager />
+                <AppRoutes />
+              </ErrorBoundary>
+            </CidadeProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </PersistQueryClientProvider>
+  );
+});
+
+App.displayName = 'App';
 
 export default App;
