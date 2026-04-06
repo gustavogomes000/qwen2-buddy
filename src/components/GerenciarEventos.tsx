@@ -29,7 +29,8 @@ export default function GerenciarEventos() {
     setLoadingAll(false);
   };
 
-  useState(() => { fetchAll(); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [_init] = useState(() => { fetchAll(); return true; });
 
   const handleSave = async () => {
     if (!nome.trim()) { toast({ title: 'Informe o nome do evento', variant: 'destructive' }); return; }
