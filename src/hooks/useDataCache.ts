@@ -1,8 +1,10 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
-import { useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
+
+const PAGE_SIZE = 200;
 
 /* ── Query keys ── */
 const keys = {
@@ -60,28 +62,23 @@ export function useContagens() {
 
 /**
  * Aplica filtros de escopo à query.
- * scope='own' → nas abas regulares, mostra só a rede do usuário (por suplente_id ou cadastrado_por)
- * scope='all' → no painel admin, mostra tudo (admin) ou filtro por cadastrado_por (não-admin)
  */
 function applyScopeFilter(
   q: any,
   scope: 'own' | 'all',
   isAdmin: boolean,
   usuario: { id: string; suplente_id: string | null } | null,
-  table: 'liderancas' | 'possiveis_eleitores'
+  _table: 'liderancas' | 'possiveis_eleitores'
 ) {
   if (!usuario) return q;
 
   if (scope === 'own') {
-    // Abas regulares: mostrar o que o usuário cadastrou OU que veio vinculado via suplente_id
     if (usuario.suplente_id) {
-      // Usuário tem suplente: mostrar cadastrado_por OU suplente_id match
       q = q.or(`cadastrado_por.eq.${usuario.id},suplente_id.eq.${usuario.suplente_id}`);
     } else {
       q = q.eq('cadastrado_por', usuario.id);
     }
   } else {
-    // Painel admin: admins veem tudo, outros filtram
     if (!isAdmin) {
       if (usuario.suplente_id) {
         q = q.or(`cadastrado_por.eq.${usuario.id},suplente_id.eq.${usuario.suplente_id}`);
@@ -93,7 +90,7 @@ function applyScopeFilter(
   return q;
 }
 
-/* ── Lideranças ── */
+/* ── Lideranças (paginated) ── */
 const QUERY_LID = 'id, status, tipo_lideranca, zona_atuacao, apoiadores_estimados, cadastrado_por, criado_em, municipio_id, origem_captacao, regiao_atuacao, bairros_influencia, comunidades_influencia, meta_votos, nivel_comprometimento, observacoes, nivel, suplente_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!liderancas_cadastrado_por_fkey(nome)';
 
 export function useLiderancas(scope: 'own' | 'all' = 'own') {
@@ -102,23 +99,28 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.liderancas(filtroMunicipioId, scopeKey),
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 0 }) => {
       let q = (supabase as any)
         .from('liderancas')
-        .select(QUERY_LID)
+        .select(QUERY_LID, { count: 'exact' })
         .order('criado_em', { ascending: false })
-        .limit(scope === 'all' && isAdmin ? 2000 : 500);
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
 
-      // Para scope 'own', não filtra por município - mostra tudo que o usuário cadastrou
       if (scope === 'all' && filtroMunicipioId) q = q.or(`municipio_id.eq.${filtroMunicipioId},municipio_id.is.null`);
       q = applyScopeFilter(q, scope, isAdmin, usuario, 'liderancas');
 
-      const { data, error } = await q;
+      const { data, error, count } = await q;
       if (error) throw error;
-      return data || [];
+      return {
+        data: data || [],
+        nextOffset: (data?.length || 0) < PAGE_SIZE ? undefined : pageParam + PAGE_SIZE,
+        totalCount: count ?? 0,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
     enabled: !!usuario,
     staleTime: 60_000,
     gcTime: 15 * 60 * 1000,
@@ -126,7 +128,7 @@ export function useLiderancas(scope: 'own' | 'all' = 'own') {
 }
 
 
-/* ── Eleitores ── */
+/* ── Eleitores (paginated) ── */
 const QUERY_ELE = 'id, compromisso_voto, lideranca_id, cadastrado_por, criado_em, municipio_id, origem_captacao, suplente_id, observacoes, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), liderancas:lideranca_id(id, pessoas(nome)), hierarquia_usuarios!possiveis_eleitores_cadastrado_por_fkey(nome)';
 
 export function useEleitores(scope: 'own' | 'all' = 'own') {
@@ -135,22 +137,28 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
   const scopeKey = scope === 'all' ? 'all' : (isAdmin && usuario?.suplente_id ? `sup-${usuario.suplente_id}` : usuario?.id || 'none');
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.eleitores(filtroMunicipioId, scopeKey),
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 0 }) => {
       let q = (supabase as any)
         .from('possiveis_eleitores')
-        .select(QUERY_ELE)
+        .select(QUERY_ELE, { count: 'exact' })
         .order('criado_em', { ascending: false })
-        .limit(scope === 'all' && isAdmin ? 2000 : 500);
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
 
       if (scope === 'all' && filtroMunicipioId) q = q.or(`municipio_id.eq.${filtroMunicipioId},municipio_id.is.null`);
       q = applyScopeFilter(q, scope, isAdmin, usuario, 'possiveis_eleitores');
 
-      const { data, error } = await q;
+      const { data, error, count } = await q;
       if (error) throw error;
-      return data || [];
+      return {
+        data: data || [],
+        nextOffset: (data?.length || 0) < PAGE_SIZE ? undefined : pageParam + PAGE_SIZE,
+        totalCount: count ?? 0,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
     enabled: !!usuario,
     staleTime: 60_000,
     gcTime: 15 * 60 * 1000,
@@ -158,7 +166,7 @@ export function useEleitores(scope: 'own' | 'all' = 'own') {
 }
 
 
-/* ── Fiscais ── */
+/* ── Fiscais (paginated) ── */
 const QUERY_FIS = 'id, status, zona_fiscal, secao_fiscal, colegio_eleitoral, cadastrado_por, suplente_id, criado_em, observacoes, origem_captacao, municipio_id, lideranca_id, pessoas(nome, cpf, telefone, whatsapp, email, instagram, facebook, titulo_eleitor, zona_eleitoral, secao_eleitoral, municipio_eleitoral, uf_eleitoral, colegio_eleitoral, endereco_colegio, situacao_titulo), hierarquia_usuarios!fiscais_cadastrado_por_fkey(nome), liderancas:lideranca_id(id, pessoas(nome))';
 
 export function useFiscaisAdmin() {
@@ -166,14 +174,14 @@ export function useFiscaisAdmin() {
   const filtroMunicipioId = useFiltroMunicipio();
   const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.fiscais(filtroMunicipioId, 'all'),
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 0 }) => {
       let q = (supabase as any)
         .from('fiscais')
-        .select(QUERY_FIS)
+        .select(QUERY_FIS, { count: 'exact' })
         .order('criado_em', { ascending: false })
-        .limit(2000);
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
 
       if (filtroMunicipioId) q = q.or(`municipio_id.eq.${filtroMunicipioId},municipio_id.is.null`);
       if (!isAdmin) {
@@ -184,10 +192,16 @@ export function useFiscaisAdmin() {
         }
       }
 
-      const { data, error } = await q;
+      const { data, error, count } = await q;
       if (error) throw error;
-      return data || [];
+      return {
+        data: data || [],
+        nextOffset: (data?.length || 0) < PAGE_SIZE ? undefined : pageParam + PAGE_SIZE,
+        totalCount: count ?? 0,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    initialPageParam: 0,
     enabled: !!usuario,
     staleTime: 60_000,
     gcTime: 15 * 60 * 1000,
@@ -223,20 +237,48 @@ export function useInvalidarCadastros() {
   }, [qc]);
 }
 
-/* ── Realtime: invalidação instantânea ao receber INSERT/UPDATE/DELETE ── */
+/* ── Realtime: only for admins, granular by municipio ── */
 export function useRealtimeSync() {
   const invalidar = useInvalidarCadastros();
+  const { tipoUsuario, municipioId } = useAuth();
+  const isAdmin = tipoUsuario === 'super_admin' || tipoUsuario === 'coordenador';
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce invalidation to avoid cascading refetches
+  const debouncedInvalidar = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => invalidar(), 500);
+  }, [invalidar]);
 
   useEffect(() => {
+    // Non-admins: skip Realtime, rely on staleTime + manual refetch
+    if (!isAdmin) {
+      console.log('[Realtime] Skipped — non-admin user, using polling');
+      return;
+    }
+
+    const channelName = municipioId
+      ? `cadastros-rt-${municipioId}`
+      : 'cadastros-rt-global';
+
+    console.log(`[Realtime] Subscribing: ${channelName}`);
+
     const channel = supabase
-      .channel('cadastros-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'liderancas' }, () => invalidar())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'possiveis_eleitores' }, () => invalidar())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'fiscais' }, () => invalidar())
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'liderancas' }, () => debouncedInvalidar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'possiveis_eleitores' }, () => debouncedInvalidar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'fiscais' }, () => debouncedInvalidar())
       .subscribe();
 
     return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       supabase.removeChannel(channel);
     };
-  }, [invalidar]);
+  }, [isAdmin, municipioId, debouncedInvalidar]);
+}
+
+/** Helper to flatten infinite query pages into a single array */
+export function flattenPages<T>(data: { pages: Array<{ data: T[] }> } | undefined): T[] {
+  if (!data) return [];
+  return data.pages.flatMap(p => p.data);
 }
