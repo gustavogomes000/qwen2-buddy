@@ -134,15 +134,18 @@ export default function TabCadastrar({ onSaved }: Props) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) { toast({ title: 'Preencha o nome', variant: 'destructive' }); return; }
+    if (!form.cpf || form.cpf.length !== 11) { toast({ title: 'Informe o CPF', variant: 'destructive' }); return; }
+    if (form.cpf.length === 11 && !validateCPF(form.cpf)) { toast({ title: 'CPF inválido', variant: 'destructive' }); return; }
     if (!form.whatsapp.trim()) { toast({ title: 'Informe o WhatsApp', variant: 'destructive' }); return; }
+    if (!form.instagram.trim()) { toast({ title: 'Informe a rede social', variant: 'destructive' }); return; }
     if (!form.titulo_eleitor.trim()) { toast({ title: 'Informe o título de eleitor', variant: 'destructive' }); return; }
     if (!form.zona_eleitoral.trim()) { toast({ title: 'Informe a zona eleitoral', variant: 'destructive' }); return; }
     if (!form.secao_eleitoral.trim()) { toast({ title: 'Informe a seção eleitoral', variant: 'destructive' }); return; }
     if (!form.municipio_eleitoral.trim()) { toast({ title: 'Informe o município eleitoral', variant: 'destructive' }); return; }
     if (!form.colegio_eleitoral.trim()) { toast({ title: 'Informe o colégio eleitoral', variant: 'destructive' }); return; }
     if (!form.regiao_atuacao.trim()) { toast({ title: 'Informe a região de atuação', variant: 'destructive' }); return; }
+    if (!form.meta_votos.trim()) { toast({ title: 'Informe quantos votos pode trazer', variant: 'destructive' }); return; }
     if (!form.nivel_comprometimento) { toast({ title: 'Selecione o comprometimento', variant: 'destructive' }); return; }
-    if (form.cpf && form.cpf.length === 11 && !validateCPF(form.cpf)) { toast({ title: 'CPF inválido', variant: 'destructive' }); return; }
     if (!ligBloqueado && tipoUsuario !== 'super_admin' && tipoUsuario !== 'coordenador' && !ligSuplenteId && !ligLiderancaId) {
       setLigErro('Selecione um suplente ou liderança');
       toast({ title: 'Selecione uma ligação política', variant: 'destructive' });
