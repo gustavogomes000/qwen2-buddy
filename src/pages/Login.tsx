@@ -229,21 +229,6 @@ export default function Login() {
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-5 space-y-0.5 flex-shrink-0 pb-6" style={entrance(0.6)}>
-          <p style={{ fontSize: '10px', color: '#bbb' }}>
-            Pré-candidata a Deputada Estadual — GO 2026
-          </p>
-          <a
-            href="https://drafernandasarelli.com.br"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline transition-colors inline-block"
-            style={{ fontSize: '10px', color: '#ec4899' }}
-          >
-            drafernandasarelli.com.br
-          </a>
-        </div>
       </div>
 
       <FloatingSupportButton />
