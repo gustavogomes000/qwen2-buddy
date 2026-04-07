@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInvalidarCadastros } from '@/hooks/useDataCache';
 import { useCidade } from '@/contexts/CidadeContext';
-import { formatCPF, cleanCPF, validateCPF, maskCPF } from '@/lib/cpf';
+import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
@@ -331,7 +331,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
         </div>
         <div className="section-card">
           <h3 className="section-title">👤 Dados Pessoais</h3>
-          <Info label="CPF" value={p.cpf ? maskCPF(p.cpf) : null} />
+          <Info label="CPF" value={p.cpf ? formatCPF(p.cpf) : null} />
           <Info label="WhatsApp" value={p.whatsapp} />
           <Info label="Rede social" value={p.instagram || p.facebook} />
           <Info label="Região" value={f.origem_captacao} />
@@ -391,7 +391,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
               {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
               {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
             </label>
-            <input type="text" value={maskCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" maxLength={14} className={`${inputCls} ${cpfBorderCls}`} />
+            <input type="text" value={formatCPF(form.cpf)} onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00" maxLength={14} className={`${inputCls} ${cpfBorderCls}`} />
             {cpfStatus === 'confirmado' && cpfNomePessoa && <p className="text-[10px] text-emerald-600">✓ {cpfNomePessoa}</p>}
           </div>
           <div className="space-y-1">
@@ -530,6 +530,9 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{f.pessoas?.nome || '—'}</p>
+              {f.pessoas?.cpf && (
+                <p className="text-[10px] text-muted-foreground truncate">CPF: {formatCPF(f.pessoas.cpf)}</p>
+              )}
               {f.origem_captacao && (
                 <p className="text-[10px] text-muted-foreground truncate">{f.origem_captacao}</p>
               )}
