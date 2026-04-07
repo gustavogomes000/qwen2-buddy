@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, CheckCircle2, ExternalLink, WifiOff } from 'lucide-react';
+import { Loader2, ExternalLink, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
@@ -36,10 +36,6 @@ export default function TabCadastrar({ onSaved }: Props) {
   const { cidadeAtiva } = useCidade();
   const { eventoAtivo } = useEvento();
   const [saving, setSaving] = useState(false);
-  const [validandoCPF, setValidandoCPF] = useState(false);
-  const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
-  const [cpfNomePessoa, setCpfNomePessoa] = useState('');
-  const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
   const [liderancasExistentes, setLiderancasExistentes] = useState<{ id: string; nome: string }[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
 
@@ -72,56 +68,10 @@ export default function TabCadastrar({ onSaved }: Props) {
   }, []);
 
   const update = useCallback((field: string, value: string) => setForm(f => ({ ...f, [field]: value })), []);
-  const cpfTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const validarCPF = useCallback(async (cpfClean: string) => {
-    if (cpfClean.length !== 11 || !validateCPF(cpfClean)) {
-      if (cpfClean.length === 11) toast({ title: 'CPF inválido', variant: 'destructive' });
-      return;
-    }
-    if (validandoCPF) return;
-    setValidandoCPF(true);
-    setCpfStatus('validando');
-    setCpfNomePessoa('');
-    setPessoaExistenteId(null);
-    try {
-      const { data: pessoa } = await supabase.from('pessoas').select('*').eq('cpf', cpfClean).maybeSingle();
-      if (pessoa) {
-        setForm(f => ({
-          ...f, cpf: pessoa.cpf || cpfClean,
-          nome: pessoa.nome || f.nome, telefone: pessoa.telefone || f.telefone,
-          whatsapp: pessoa.whatsapp || f.whatsapp, email: pessoa.email || f.email,
-          instagram: pessoa.instagram || f.instagram, facebook: pessoa.facebook || f.facebook,
-          titulo_eleitor: pessoa.titulo_eleitor || f.titulo_eleitor,
-          zona_eleitoral: pessoa.zona_eleitoral || f.zona_eleitoral,
-          secao_eleitoral: pessoa.secao_eleitoral || f.secao_eleitoral,
-          municipio_eleitoral: pessoa.municipio_eleitoral || f.municipio_eleitoral,
-          uf_eleitoral: pessoa.uf_eleitoral || f.uf_eleitoral,
-          colegio_eleitoral: pessoa.colegio_eleitoral || f.colegio_eleitoral,
-          endereco_colegio: pessoa.endereco_colegio || f.endereco_colegio,
-          situacao_titulo: pessoa.situacao_titulo || f.situacao_titulo,
-        }));
-        setPessoaExistenteId(pessoa.id);
-        setCpfStatus('confirmado');
-        setCpfNomePessoa(pessoa.nome);
-        toast({ title: '✅ Pessoa já cadastrada!', description: `Dados de ${pessoa.nome} preenchidos` });
-      } else {
-        setCpfStatus('idle');
-      }
-    } catch (err) { console.error(err); }
-    finally { setValidandoCPF(false); }
-  }, [validandoCPF]);
 
   const handleCPFChange = (value: string) => {
     const cleaned = cleanCPF(value);
     update('cpf', cleaned);
-    setCpfStatus('idle');
-    setCpfNomePessoa('');
-    setPessoaExistenteId(null);
-    if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
-    if (cleaned.length === 11) {
-      cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
-    }
   };
 
   // Get suplente_id: if user is suplente, use their suplente_id; otherwise traverse hierarchy
@@ -190,13 +140,10 @@ export default function TabCadastrar({ onSaved }: Props) {
           type: 'lideranca',
           pessoa: pessoaData,
           registro: registroData,
-          pessoaExistenteId: pessoaExistenteId,
+          pessoaExistenteId: null,
         });
         toast({ title: '📱 Salvo offline!', description: 'Será enviado automaticamente quando voltar a internet.' });
         setForm({ ...emptyForm });
-        setPessoaExistenteId(null);
-        setCpfStatus('idle');
-        setCpfNomePessoa('');
         onSaved();
       } catch (err: any) {
         toast({ title: 'Erro ao salvar offline', description: err.message, variant: 'destructive' });
@@ -206,18 +153,9 @@ export default function TabCadastrar({ onSaved }: Props) {
 
     // Online: salvar normalmente
     try {
-      let pessoaId: string;
-      if (pessoaExistenteId) {
-        pessoaId = pessoaExistenteId;
-        await supabase.from('pessoas').update({
-          ...pessoaData,
-          atualizado_em: new Date().toISOString(),
-        }).eq('id', pessoaId);
-      } else {
-        const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
-        if (error) throw error;
-        pessoaId = novaPessoa!.id;
-      }
+      const { data: novaPessoa, error } = await supabase.from('pessoas').insert(pessoaData as any).select('id').single();
+      if (error) throw error;
+      const pessoaId = novaPessoa!.id;
 
       const { error: lError } = await (supabase as any).from('liderancas').insert({
         ...registroData,
@@ -227,9 +165,6 @@ export default function TabCadastrar({ onSaved }: Props) {
 
       toast({ title: '✅ Liderança cadastrada com sucesso!' });
       setForm({ ...emptyForm });
-      setPessoaExistenteId(null);
-      setCpfStatus('idle');
-      setCpfNomePessoa('');
       onSaved();
     } catch (err: any) {
       toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' });
