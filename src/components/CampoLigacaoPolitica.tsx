@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { User, Users, Lock, Search, Loader2, X, Check } from 'lucide-react';
+import { User, Users, UserPlus, Lock, Search, Loader2, X, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cachedInvoke } from '@/lib/cacheEdgeFunctions';
 import { resolverMunicipioId } from '@/lib/resolverMunicipio';
+import { toast } from '@/hooks/use-toast';
 
 interface SuplenteResult {
   id: string;
@@ -11,12 +12,11 @@ interface SuplenteResult {
   regiao_atuacao?: string | null;
 }
 
-interface UsuarioResult {
+interface LiderancaResult {
   id: string;
   nome: string;
-  tipo: string;
+  regiao_atuacao?: string | null;
   suplente_id?: string | null;
-  municipio_id?: string | null;
 }
 
 interface Props {
@@ -44,18 +44,23 @@ export default function CampoLigacaoPolitica({
   erro,
   cidadeAtivaId,
 }: Props) {
-  const [aba, setAba] = useState<'suplente' | 'usuario'>('suplente');
+  const [aba, setAba] = useState<'suplente' | 'lideranca' | 'nova'>('suplente');
   const [buscaSuplente, setBuscaSuplente] = useState('');
-  const [buscaUsuario, setBuscaUsuario] = useState('');
+  const [buscaLideranca, setBuscaLideranca] = useState('');
   const [suplentes, setSuplentes] = useState<SuplenteResult[]>([]);
-  const [usuarios, setUsuarios] = useState<UsuarioResult[]>([]);
+  const [liderancasLocal, setLiderancasLocal] = useState<LiderancaResult[]>([]);
   const [loadingSup, setLoadingSup] = useState(false);
-  const [loadingUsr, setLoadingUsr] = useState(false);
+  const [loadingLid, setLoadingLid] = useState(false);
   const [supNomeSelecionado, setSupNomeSelecionado] = useState<string | null>(null);
-  const [usrNomeSelecionado, setUsrNomeSelecionado] = useState<string | null>(null);
-  const [usrIdSelecionado, setUsrIdSelecionado] = useState<string | null>(null);
+  const [lidNomeSelecionado, setLidNomeSelecionado] = useState<string | null>(null);
   const debounceSupRef = useRef<NodeJS.Timeout | null>(null);
-  const debounceUsrRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceLidRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Nova Liderança inline form
+  const [novaLidNome, setNovaLidNome] = useState('');
+  const [novaLidTelefone, setNovaLidTelefone] = useState('');
+  const [novaLidRegiao, setNovaLidRegiao] = useState('');
+  const [salvandoNova, setSalvandoNova] = useState(false);
 
   // Buscar suplentes com debounce
   const buscarSuplentes = useCallback(async (q: string) => {
@@ -84,21 +89,15 @@ export default function CampoLigacaoPolitica({
     setLoadingSup(false);
   }, [cidadeAtivaId]);
 
-  // Buscar usuários do sistema (hierarquia_usuarios)
-  const buscarUsuarios = useCallback(async (q: string) => {
-    setLoadingUsr(true);
+  const buscarLiderancas = useCallback(async (q: string) => {
+    setLoadingLid(true);
     try {
       let query = (supabase as any)
-        .from('hierarquia_usuarios')
-        .select('id, nome, tipo, suplente_id, municipio_id')
-        .eq('ativo', true)
-        .in('tipo', ['suplente', 'lideranca', 'coordenador'])
-        .order('nome', { ascending: true })
-        .limit(30);
-
-      if (q) {
-        query = query.ilike('nome', `%${q}%`);
-      }
+        .from('liderancas')
+        .select('id, regiao_atuacao, suplente_id, pessoas(nome)')
+        .eq('status', 'Ativa')
+        .order('criado_em', { ascending: false })
+        .limit(20);
 
       if (cidadeAtivaId) {
         query = query.eq('municipio_id', cidadeAtivaId);
@@ -106,19 +105,29 @@ export default function CampoLigacaoPolitica({
 
       const { data } = await query;
       if (data) {
-        setUsuarios(data as UsuarioResult[]);
+        let results = (data as any[]).map(l => ({
+          id: l.id,
+          nome: l.pessoas?.nome || '—',
+          regiao_atuacao: l.regiao_atuacao,
+          suplente_id: l.suplente_id,
+        }));
+        if (q) {
+          const lower = q.toLowerCase();
+          results = results.filter(l => l.nome.toLowerCase().includes(lower));
+        }
+        setLiderancasLocal(results);
       }
     } catch {}
-    setLoadingUsr(false);
+    setLoadingLid(false);
   }, [cidadeAtivaId]);
 
   // Trigger searches on mount
   useEffect(() => {
     if (!bloqueado) {
       buscarSuplentes('');
-      buscarUsuarios('');
+      buscarLiderancas('');
     }
-  }, [bloqueado, buscarSuplentes, buscarUsuarios]);
+  }, [bloqueado, buscarSuplentes, buscarLiderancas]);
 
   const handleBuscaSuplente = (val: string) => {
     setBuscaSuplente(val);
@@ -126,13 +135,14 @@ export default function CampoLigacaoPolitica({
     debounceSupRef.current = setTimeout(() => buscarSuplentes(val), 300);
   };
 
-  const handleBuscaUsuario = (val: string) => {
-    setBuscaUsuario(val);
-    if (debounceUsrRef.current) clearTimeout(debounceUsrRef.current);
-    debounceUsrRef.current = setTimeout(() => buscarUsuarios(val), 300);
+  const handleBuscaLideranca = (val: string) => {
+    setBuscaLideranca(val);
+    if (debounceLidRef.current) clearTimeout(debounceLidRef.current);
+    debounceLidRef.current = setTimeout(() => buscarLiderancas(val), 300);
   };
 
   const selecionarSuplente = async (sup: SuplenteResult) => {
+    // Upsert suplente into local table to satisfy FK constraints
     try {
       await (supabase as any).from('suplentes').upsert({
         id: String(sup.id),
@@ -146,34 +156,73 @@ export default function CampoLigacaoPolitica({
 
     const munId = await resolverMunicipioId(String(sup.id));
     setSupNomeSelecionado(sup.nome);
-    setUsrNomeSelecionado(null);
-    setUsrIdSelecionado(null);
+    setLidNomeSelecionado(null);
     onSuplenteChange(String(sup.id), sup.nome, munId);
     onLiderancaChange(null, null, null, null);
   };
 
-  const selecionarUsuario = async (usr: UsuarioResult) => {
-    const munId = usr.municipio_id || (usr.suplente_id ? await resolverMunicipioId(String(usr.suplente_id)) : null);
-    setUsrNomeSelecionado(usr.nome);
-    setUsrIdSelecionado(usr.id);
-    setSupNomeSelecionado(null);
-
-    // Link via suplente_id if available
-    if (usr.suplente_id) {
-      onSuplenteChange(usr.suplente_id, null, munId);
-      onLiderancaChange(null, null, usr.suplente_id, munId);
-    } else {
-      onSuplenteChange(null, null, munId);
-      onLiderancaChange(null, null, null, munId);
+  const selecionarLideranca = async (lid: LiderancaResult) => {
+    let munId: string | null = null;
+    if (lid.suplente_id) {
+      munId = await resolverMunicipioId(String(lid.suplente_id));
     }
+    setLidNomeSelecionado(lid.nome);
+    setSupNomeSelecionado(null);
+    onLiderancaChange(lid.id, lid.nome, lid.suplente_id || null, munId);
+    onSuplenteChange(null, null, null);
   };
 
   const limpar = () => {
     setSupNomeSelecionado(null);
-    setUsrNomeSelecionado(null);
-    setUsrIdSelecionado(null);
+    setLidNomeSelecionado(null);
     onSuplenteChange(null, null, null);
     onLiderancaChange(null, null, null, null);
+  };
+
+  // Salvar nova liderança inline
+  const salvarNovaLideranca = async () => {
+    if (!novaLidNome.trim()) {
+      toast({ title: 'Informe o nome da liderança', variant: 'destructive' });
+      return;
+    }
+    setSalvandoNova(true);
+    try {
+      // Criar pessoa
+      const { data: novaPessoa, error: pessoaError } = await supabase.from('pessoas').insert({
+        nome: novaLidNome.trim(),
+        telefone: novaLidTelefone.trim() || null,
+      }).select('id').single();
+      if (pessoaError) throw pessoaError;
+
+      // Criar liderança
+      const { data: novaLid, error: lidError } = await (supabase as any).from('liderancas').insert({
+        pessoa_id: novaPessoa.id,
+        regiao_atuacao: novaLidRegiao.trim() || null,
+        status: 'Ativa',
+      }).select('id').single();
+      if (lidError) throw lidError;
+
+      // Selecionar a nova liderança
+      setLidNomeSelecionado(novaLidNome.trim());
+      setSupNomeSelecionado(null);
+      onLiderancaChange(novaLid.id, novaLidNome.trim(), null, null);
+      onSuplenteChange(null, null, null);
+
+      // Limpar form
+      setNovaLidNome('');
+      setNovaLidTelefone('');
+      setNovaLidRegiao('');
+      setAba('suplente');
+
+      toast({ title: '✅ Nova liderança criada e selecionada!' });
+
+      // Refresh liderancas list
+      buscarLiderancas('');
+    } catch (err: any) {
+      toast({ title: 'Erro ao criar liderança', description: err.message, variant: 'destructive' });
+    } finally {
+      setSalvandoNova(false);
+    }
   };
 
   // Bloqueado → exibir campo fixo
@@ -192,13 +241,10 @@ export default function CampoLigacaoPolitica({
     );
   }
 
-  const temSelecao = !!suplenteIdSelecionado || !!liderancaIdSelecionada || !!supNomeSelecionado || !!usrNomeSelecionado;
+  // Editável com tabs
+  const temSelecao = !!suplenteIdSelecionado || !!liderancaIdSelecionada || !!supNomeSelecionado || !!lidNomeSelecionado;
 
-  const tipoLabel: Record<string, string> = {
-    suplente: 'Suplente',
-    lideranca: 'Liderança',
-    coordenador: 'Coordenador',
-  };
+  const inputCls = "w-full h-9 px-3 bg-card border border-border rounded-lg text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30";
 
   return (
     <div className="section-card">
@@ -210,10 +256,10 @@ export default function CampoLigacaoPolitica({
           <Check size={14} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-primary truncate">
-              {supNomeSelecionado || usrNomeSelecionado || 'Selecionado'}
+              {supNomeSelecionado || lidNomeSelecionado || 'Selecionado'}
             </p>
             <p className="text-[10px] text-muted-foreground">
-              {supNomeSelecionado ? 'Suplente' : 'Usuário do sistema'}
+              {supNomeSelecionado ? 'Suplente' : 'Liderança'}
             </p>
           </div>
           <button onClick={limpar} className="p-1 text-muted-foreground hover:text-foreground">
@@ -222,7 +268,7 @@ export default function CampoLigacaoPolitica({
         </div>
       )}
 
-      {/* Tabs - 2 abas */}
+      {/* Tabs - 3 abas */}
       <div className="flex gap-1 mb-2">
         <button
           onClick={() => setAba('suplente')}
@@ -233,12 +279,20 @@ export default function CampoLigacaoPolitica({
           <User size={11} /> Suplente
         </button>
         <button
-          onClick={() => setAba('usuario')}
+          onClick={() => setAba('lideranca')}
           className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-all ${
-            aba === 'usuario' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            aba === 'lideranca' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
           }`}
         >
-          <Users size={11} /> Usuário
+          <Users size={11} /> Liderança
+        </button>
+        <button
+          onClick={() => setAba('nova')}
+          className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[10px] font-semibold transition-all ${
+            aba === 'nova' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          <UserPlus size={11} /> Nova
         </button>
       </div>
 
@@ -279,42 +333,80 @@ export default function CampoLigacaoPolitica({
         </div>
       )}
 
-      {/* Tab: Usuário do Sistema */}
-      {aba === 'usuario' && (
+      {/* Tab: Liderança Existente */}
+      {aba === 'lideranca' && (
         <div className="space-y-1.5">
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
-              value={buscaUsuario}
-              onChange={e => handleBuscaUsuario(e.target.value)}
-              placeholder="Buscar usuário do sistema..."
+              value={buscaLideranca}
+              onChange={e => handleBuscaLideranca(e.target.value)}
+              placeholder="Buscar liderança existente..."
               className="w-full h-9 pl-8 pr-3 bg-card border border-border rounded-lg text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/30"
             />
-            {loadingUsr && <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />}
+            {loadingLid && <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-muted-foreground" />}
           </div>
           <div className="max-h-36 overflow-y-auto space-y-1">
-            {usuarios.map(u => (
+            {liderancasLocal.map(l => (
               <button
-                key={u.id}
-                onClick={() => selecionarUsuario(u)}
+                key={l.id}
+                onClick={() => selecionarLideranca(l)}
                 className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all active:scale-[0.98] ${
-                  usrIdSelecionado === u.id
+                  liderancaIdSelecionada === l.id
                     ? 'border-primary bg-primary/5'
                     : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-foreground flex-1 truncate">{u.nome}</p>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium shrink-0">
-                    {tipoLabel[u.tipo] || u.tipo}
-                  </span>
-                </div>
+                <p className="text-xs font-semibold text-foreground">{l.nome}</p>
+                {l.regiao_atuacao && <p className="text-[10px] text-muted-foreground">{l.regiao_atuacao}</p>}
               </button>
             ))}
-            {!loadingUsr && usuarios.length === 0 && (
-              <p className="text-[10px] text-muted-foreground text-center py-3">Nenhum usuário encontrado</p>
+            {!loadingLid && liderancasLocal.length === 0 && (
+              <p className="text-[10px] text-muted-foreground text-center py-3">Nenhuma liderança encontrada</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Tab: Nova Liderança */}
+      {aba === 'nova' && (
+        <div className="space-y-2">
+          <p className="text-[10px] text-muted-foreground">Crie uma nova liderança rapidamente e vincule ao cadastro.</p>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">Nome <span className="text-primary">*</span></label>
+            <input
+              value={novaLidNome}
+              onChange={e => setNovaLidNome(e.target.value)}
+              placeholder="Nome da liderança"
+              className={inputCls}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">Telefone</label>
+            <input
+              value={novaLidTelefone}
+              onChange={e => setNovaLidTelefone(e.target.value)}
+              placeholder="(00) 00000-0000"
+              className={inputCls}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-medium text-muted-foreground">Região de atuação</label>
+            <input
+              value={novaLidRegiao}
+              onChange={e => setNovaLidRegiao(e.target.value)}
+              placeholder="Bairro, comunidade..."
+              className={inputCls}
+            />
+          </div>
+          <button
+            onClick={salvarNovaLideranca}
+            disabled={salvandoNova || !novaLidNome.trim()}
+            className="w-full h-9 bg-primary text-primary-foreground rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-[0.97] transition-all disabled:opacity-50"
+          >
+            {salvandoNova ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
+            Criar e Vincular
+          </button>
         </div>
       )}
 
