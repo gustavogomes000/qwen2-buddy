@@ -175,7 +175,7 @@ export default function TabCadastrar({ onSaved }: Props) {
   const selectCls = inputCls;
   const textareaCls = "w-full px-3 py-2 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-none";
 
-  const cpfBorderCls = cpfStatus === 'confirmado' ? 'border-emerald-500 ring-1 ring-emerald-500/30' : '';
+  
 
   return (
     <div className="space-y-4 pb-24">
@@ -187,18 +187,13 @@ export default function TabCadastrar({ onSaved }: Props) {
           <input type="text" value={form.nome} onChange={e => update('nome', e.target.value)} placeholder="Nome da liderança" className={inputCls} />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+          <label className="text-xs font-medium text-muted-foreground">
             CPF <span className="text-primary">*</span>
-            {cpfStatus === 'validando' && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
-            {cpfStatus === 'confirmado' && <CheckCircle2 size={12} className="text-emerald-500" />}
           </label>
           <input type="text" inputMode="numeric" value={formatCPF(form.cpf)}
             onChange={e => handleCPFChange(e.target.value)} placeholder="000.000.000-00"
-            className={`${inputCls} ${cpfBorderCls}`}
+            className={inputCls}
             maxLength={14} />
-          {cpfStatus === 'confirmado' && cpfNomePessoa && (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ Pessoa encontrada: {cpfNomePessoa}</p>
-          )}
         </div>
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">WhatsApp <span className="text-primary">*</span></label>
