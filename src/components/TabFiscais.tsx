@@ -451,7 +451,6 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
             <label className="text-xs font-medium text-muted-foreground">Colégio eleitoral <span className="text-primary">*</span></label>
             <input type="text" value={form.colegio_eleitoral} onChange={e => update('colegio_eleitoral', e.target.value)} className={inputCls} />
           </div>
-          </div>
         </div>
 
         <div className="section-card">
