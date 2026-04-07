@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Loader2, Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Trash2, Download, WifiOff } from 'lucide-react';
+import { Loader2, Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Trash2, Download, WifiOff, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInvalidarCadastros } from '@/hooks/useDataCache';
