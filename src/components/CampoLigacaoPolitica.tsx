@@ -10,13 +10,27 @@ interface SuplenteResult {
   nome: string;
   partido?: string | null;
   regiao_atuacao?: string | null;
+  origem?: 'externo' | 'interno';
+  hierarquia_id?: string;
 }
 
 interface LiderancaResult {
   id: string;
+  lideranca_id?: string | null;
   nome: string;
   regiao_atuacao?: string | null;
   suplente_id?: string | null;
+  municipio_id?: string | null;
+  origem?: 'local' | 'interna';
+  hierarquia_id?: string;
+}
+
+interface UsuarioInternoResult {
+  id: string;
+  nome: string;
+  tipo: string;
+  suplente_id?: string | null;
+  municipio_id?: string | null;
 }
 
 interface Props {
@@ -31,6 +45,12 @@ interface Props {
   erro?: string | null;
   cidadeAtivaId?: string | null;
 }
+
+const normalizarTexto = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 
 export default function CampoLigacaoPolitica({
   bloqueado,
@@ -62,39 +82,89 @@ export default function CampoLigacaoPolitica({
   const [novaLidRegiao, setNovaLidRegiao] = useState('');
   const [salvandoNova, setSalvandoNova] = useState(false);
 
+  const buscarUsuariosInternos = useCallback(async (tipos: string[], q: string) => {
+    let query = (supabase as any)
+      .from('hierarquia_usuarios')
+      .select('id, nome, tipo, suplente_id, municipio_id')
+      .eq('ativo', true)
+      .in('tipo', tipos)
+      .order('nome');
+
+    if (cidadeAtivaId) {
+      query = query.eq('municipio_id', cidadeAtivaId);
+    }
+
+    const { data } = await query;
+    let results = (data || []) as UsuarioInternoResult[];
+
+    if (q) {
+      const termo = normalizarTexto(q);
+      results = results.filter((u) => normalizarTexto(u.nome || '').includes(termo));
+    }
+
+    return results;
+  }, [cidadeAtivaId]);
+
   // Buscar suplentes com debounce
   const buscarSuplentes = useCallback(async (q: string) => {
     setLoadingSup(true);
     try {
-      const data = await cachedInvoke<any[]>('buscar-suplentes');
-      if (Array.isArray(data)) {
-        let filtered = data as SuplenteResult[];
-        if (q) {
-          const lower = q.toLowerCase();
-          filtered = filtered.filter((s: any) => s.nome?.toLowerCase().includes(lower));
-        }
-        if (cidadeAtivaId) {
-          const { data: supMun } = await (supabase as any)
-            .from('suplente_municipio')
-            .select('suplente_id')
-            .eq('municipio_id', cidadeAtivaId);
-          if (supMun) {
-            const supIds = new Set(supMun.map((sm: any) => String(sm.suplente_id)));
-            filtered = filtered.filter(s => supIds.has(String(s.id)));
-          }
-        }
-        setSuplentes(filtered.slice(0, 20));
+      const [data, usuariosInternos] = await Promise.all([
+        cachedInvoke<any[]>('buscar-suplentes'),
+        buscarUsuariosInternos(['suplente'], q),
+      ]);
+
+      let filtradosExternos: SuplenteResult[] = Array.isArray(data) ? (data as SuplenteResult[]) : [];
+
+      if (q) {
+        const termo = normalizarTexto(q);
+        filtradosExternos = filtradosExternos.filter((s: any) =>
+          normalizarTexto(s.nome || '').includes(termo)
+        );
       }
+
+      if (cidadeAtivaId) {
+        const { data: supMun } = await (supabase as any)
+          .from('suplente_municipio')
+          .select('suplente_id')
+          .eq('municipio_id', cidadeAtivaId);
+
+        if (supMun) {
+          const supIds = new Set(supMun.map((sm: any) => String(sm.suplente_id)));
+          filtradosExternos = filtradosExternos.filter(s => supIds.has(String(s.id)));
+        }
+      }
+
+      const internosMapeados: SuplenteResult[] = usuariosInternos
+        .filter((u) => !!u.suplente_id)
+        .map((u) => ({
+          id: String(u.suplente_id),
+          nome: u.nome,
+          partido: null,
+          regiao_atuacao: 'Usuário interno',
+          origem: 'interno',
+          hierarquia_id: u.id,
+        }));
+
+      const vistos = new Set<string>();
+      const lista = [...internosMapeados, ...filtradosExternos].filter((item) => {
+        const chave = `${item.id}::${normalizarTexto(item.nome)}`;
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+      });
+
+      setSuplentes(lista.slice(0, 20));
     } catch {}
     setLoadingSup(false);
-  }, [cidadeAtivaId]);
+  }, [buscarUsuariosInternos, cidadeAtivaId]);
 
   const buscarLiderancas = useCallback(async (q: string) => {
     setLoadingLid(true);
     try {
       let query = (supabase as any)
         .from('liderancas')
-        .select('id, regiao_atuacao, suplente_id, pessoas(nome)')
+        .select('id, municipio_id, regiao_atuacao, suplente_id, pessoas(nome)')
         .eq('status', 'Ativa')
         .order('criado_em', { ascending: false })
         .limit(20);
@@ -103,23 +173,53 @@ export default function CampoLigacaoPolitica({
         query = query.eq('municipio_id', cidadeAtivaId);
       }
 
-      const { data } = await query;
+      const [{ data }, usuariosInternos] = await Promise.all([
+        query,
+        buscarUsuariosInternos(['lideranca'], q),
+      ]);
+
+      let results: LiderancaResult[] = [];
+
       if (data) {
-        let results = (data as any[]).map(l => ({
+        results = (data as any[]).map(l => ({
           id: l.id,
+          lideranca_id: l.id,
           nome: l.pessoas?.nome || '—',
           regiao_atuacao: l.regiao_atuacao,
           suplente_id: l.suplente_id,
+          municipio_id: l.municipio_id,
+          origem: 'local',
         }));
+
         if (q) {
-          const lower = q.toLowerCase();
-          results = results.filter(l => l.nome.toLowerCase().includes(lower));
+          const termo = normalizarTexto(q);
+          results = results.filter(l => normalizarTexto(l.nome).includes(termo));
         }
-        setLiderancasLocal(results);
       }
+
+      const internosMapeados: LiderancaResult[] = usuariosInternos.map((u) => ({
+        id: `interno-${u.id}`,
+        lideranca_id: null,
+        nome: u.nome,
+        regiao_atuacao: 'Usuário interno',
+        suplente_id: u.suplente_id || null,
+        municipio_id: u.municipio_id || null,
+        origem: 'interna',
+        hierarquia_id: u.id,
+      }));
+
+      const vistos = new Set<string>();
+      const lista = [...internosMapeados, ...results].filter((item) => {
+        const chave = `${item.id}::${normalizarTexto(item.nome)}`;
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+      });
+
+      setLiderancasLocal(lista.slice(0, 20));
     } catch {}
     setLoadingLid(false);
-  }, [cidadeAtivaId]);
+  }, [buscarUsuariosInternos, cidadeAtivaId]);
 
   // Trigger searches on mount
   useEffect(() => {
@@ -144,11 +244,29 @@ export default function CampoLigacaoPolitica({
   const selecionarSuplente = async (sup: SuplenteResult) => {
     // Upsert suplente into local table to satisfy FK constraints
     try {
+      let supData = sup;
+
+      if (sup.origem === 'interno') {
+        const data = await cachedInvoke<any[]>('buscar-suplentes');
+        if (Array.isArray(data)) {
+          const externo = data.find((item: any) => String(item.id) === String(sup.id));
+          if (externo) {
+            supData = {
+              id: String(externo.id),
+              nome: externo.nome,
+              partido: externo.partido || null,
+              regiao_atuacao: externo.regiao_atuacao || null,
+              origem: 'externo',
+            };
+          }
+        }
+      }
+
       await (supabase as any).from('suplentes').upsert({
-        id: String(sup.id),
-        nome: sup.nome,
-        partido: sup.partido || null,
-        regiao_atuacao: sup.regiao_atuacao || null,
+        id: String(supData.id),
+        nome: supData.nome,
+        partido: supData.partido || null,
+        regiao_atuacao: supData.regiao_atuacao || null,
       }, { onConflict: 'id' });
     } catch (e) {
       console.warn('Erro ao sincronizar suplente local:', e);
@@ -162,13 +280,55 @@ export default function CampoLigacaoPolitica({
   };
 
   const selecionarLideranca = async (lid: LiderancaResult) => {
-    let munId: string | null = null;
-    if (lid.suplente_id) {
-      munId = await resolverMunicipioId(String(lid.suplente_id));
+    let liderancaId = lid.lideranca_id || null;
+    let suplenteId = lid.suplente_id || null;
+    let munId = lid.municipio_id || null;
+
+    if (lid.origem === 'interna') {
+      try {
+        let query = (supabase as any)
+          .from('liderancas')
+          .select('id, municipio_id, suplente_id, pessoas(nome)')
+          .eq('status', 'Ativa')
+          .limit(100);
+
+        if (cidadeAtivaId) {
+          query = query.eq('municipio_id', cidadeAtivaId);
+        }
+
+        const { data: liderancas } = await query;
+
+        if (liderancas) {
+          const nomeBuscado = normalizarTexto(lid.nome);
+          const match = (liderancas as any[]).find((item) =>
+            normalizarTexto(item.pessoas?.nome || '') === nomeBuscado
+          );
+
+          if (match) {
+            liderancaId = match.id;
+            suplenteId = match.suplente_id || suplenteId;
+            munId = match.municipio_id || munId;
+          }
+        }
+      } catch {}
     }
+
+    if (!munId && suplenteId) {
+      munId = await resolverMunicipioId(String(suplenteId));
+    }
+
+    if (!liderancaId && !suplenteId) {
+      toast({
+        title: 'Usuário interno sem vínculo disponível',
+        description: 'Esse usuário ainda não possui suplente ou liderança vinculada para seleção.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLidNomeSelecionado(lid.nome);
     setSupNomeSelecionado(null);
-    onLiderancaChange(lid.id, lid.nome, lid.suplente_id || null, munId);
+    onLiderancaChange(liderancaId, lid.nome, suplenteId, munId);
     onSuplenteChange(null, null, null);
   };
 
@@ -312,7 +472,7 @@ export default function CampoLigacaoPolitica({
           <div className="max-h-36 overflow-y-auto space-y-1">
             {suplentes.map(s => (
               <button
-                key={s.id}
+                key={`${s.origem || 'externo'}-${s.hierarquia_id || s.id}-${normalizarTexto(s.nome)}`}
                 onClick={() => selecionarSuplente(s)}
                 className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all active:scale-[0.98] ${
                   String(suplenteIdSelecionado) === String(s.id)
@@ -322,7 +482,9 @@ export default function CampoLigacaoPolitica({
               >
                 <p className="text-xs font-semibold text-foreground">{s.nome}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {[s.partido, s.regiao_atuacao].filter(Boolean).join(' · ') || '—'}
+                  {s.origem === 'interno'
+                    ? [s.regiao_atuacao].filter(Boolean).join(' · ') || 'Usuário interno'
+                    : [s.partido, s.regiao_atuacao].filter(Boolean).join(' · ') || '—'}
                 </p>
               </button>
             ))}
@@ -352,13 +514,19 @@ export default function CampoLigacaoPolitica({
                 key={l.id}
                 onClick={() => selecionarLideranca(l)}
                 className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all active:scale-[0.98] ${
-                  liderancaIdSelecionada === l.id
+                  liderancaIdSelecionada === l.lideranca_id
                     ? 'border-primary bg-primary/5'
                     : 'border-border bg-card hover:bg-muted/50'
                 }`}
               >
                 <p className="text-xs font-semibold text-foreground">{l.nome}</p>
-                {l.regiao_atuacao && <p className="text-[10px] text-muted-foreground">{l.regiao_atuacao}</p>}
+                {(l.regiao_atuacao || l.origem === 'interna') && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {l.origem === 'interna'
+                      ? [l.regiao_atuacao].filter(Boolean).join(' · ') || 'Usuário interno'
+                      : l.regiao_atuacao}
+                  </p>
+                )}
               </button>
             ))}
             {!loadingLid && liderancasLocal.length === 0 && (
