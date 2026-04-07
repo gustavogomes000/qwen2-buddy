@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Loader2, CheckCircle2, Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Trash2, ExternalLink, Download, WifiOff } from 'lucide-react';
+import { Loader2, Search, ChevronRight, ArrowLeft, Phone, MessageCircle, Trash2, ExternalLink, Download, WifiOff } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEleitores, useInvalidarCadastros } from '@/hooks/useDataCache';
 import { useCidade } from '@/contexts/CidadeContext';
-import { formatCPF, cleanCPF, validateCPF, maskCPF } from '@/lib/cpf';
+import { formatCPF, cleanCPF, validateCPF } from '@/lib/cpf';
 
 import { resolverLigacaoPolitica } from '@/lib/resolverLigacaoPolitica';
 import { toast } from '@/hooks/use-toast';
@@ -68,14 +68,8 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
   const [carregandoMais, setCarregandoMais] = useState(false);
   const paginaRef = useRef(0);
   const [saving, setSaving] = useState(false);
-  const [pessoaExistenteId, setPessoaExistenteId] = useState<string | null>(null);
-  const [cpfStatus, setCpfStatus] = useState<'idle' | 'validando' | 'confirmado'>('idle');
-  const [cpfNomePessoa, setCpfNomePessoa] = useState('');
-  
-  const [validandoCPF, setValidandoCPF] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
   const [liderancas, setLiderancas] = useState<{ id: string; nome: string }[]>([]);
-  const cpfTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Ligação política
   const [ligBloqueado, setLigBloqueado] = useState(false);
@@ -123,45 +117,9 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
       .then(({ data }) => { if (data) setLiderancas(data.map((l: any) => ({ id: l.id, nome: l.pessoas?.nome || '—' }))); });
   }, []);
 
-  const validarCPF = useCallback(async (cpfClean: string) => {
-    if (cpfClean.length !== 11 || !validateCPF(cpfClean)) return;
-    if (validandoCPF) return;
-    setValidandoCPF(true);
-    setCpfStatus('validando');
-    try {
-      const { data: pessoa } = await supabase.from('pessoas').select('*').eq('cpf', cpfClean).maybeSingle();
-      if (pessoa) {
-        setForm(f => ({
-          ...f, cpf: pessoa.cpf || cpfClean,
-          nome: pessoa.nome || f.nome, telefone: pessoa.telefone || f.telefone,
-          whatsapp: pessoa.whatsapp || f.whatsapp, email: pessoa.email || f.email,
-          instagram: pessoa.instagram || f.instagram, facebook: pessoa.facebook || f.facebook,
-          titulo_eleitor: pessoa.titulo_eleitor || f.titulo_eleitor,
-          zona_eleitoral: pessoa.zona_eleitoral || f.zona_eleitoral,
-          secao_eleitoral: pessoa.secao_eleitoral || f.secao_eleitoral,
-          municipio_eleitoral: pessoa.municipio_eleitoral || f.municipio_eleitoral,
-          uf_eleitoral: pessoa.uf_eleitoral || f.uf_eleitoral,
-          colegio_eleitoral: pessoa.colegio_eleitoral || f.colegio_eleitoral,
-          endereco_colegio: pessoa.endereco_colegio || f.endereco_colegio,
-          situacao_titulo: pessoa.situacao_titulo || f.situacao_titulo,
-        }));
-        setPessoaExistenteId(pessoa.id);
-        setCpfStatus('confirmado');
-        setCpfNomePessoa(pessoa.nome);
-        toast({ title: '✅ Pessoa encontrada!', description: `Dados de ${pessoa.nome} preenchidos` });
-      } else { setCpfStatus('idle'); }
-    } catch (err) { console.error(err); }
-    finally { setValidandoCPF(false); }
-  }, [validandoCPF, usuario?.id]);
-
   const handleCPFChange = (value: string) => {
     const cleaned = cleanCPF(value);
     update('cpf', cleaned);
-    setCpfStatus('idle');
-    setPessoaExistenteId(null);
-    
-    if (cpfTimeoutRef.current) clearTimeout(cpfTimeoutRef.current);
-    if (cleaned.length === 11) cpfTimeoutRef.current = setTimeout(() => validarCPF(cleaned), 500);
   };
 
   const handleSave = async () => {
