@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       devOptions: { enabled: false },
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
