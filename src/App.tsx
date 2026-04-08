@@ -84,9 +84,13 @@ function OfflineSyncManager() {
 
 /** PWA silent auto-update — no popup, reloads automatically */
 function PwaSilentUpdater() {
-  useRegisterSW({
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       if (registration) {
+        // Check for updates every 60 seconds
         setInterval(() => {
           registration.update().catch(() => {});
         }, 60_000);
@@ -96,6 +100,15 @@ function PwaSilentUpdater() {
       console.error('[SW] Registration error:', error);
     },
   });
+
+  // Auto-apply update when available — no user action needed
+  useEffect(() => {
+    if (needRefresh) {
+      console.log('[SW] New version available, updating silently...');
+      updateServiceWorker(true);
+    }
+  }, [needRefresh, updateServiceWorker]);
+
   return null;
 }
 
