@@ -45,6 +45,8 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, usuario } = useAuth();
   if (loading) return <LoadingScreen message="Carregando..." />;
+  // user is set but usuario still loading (initializeUser in progress)
+  if (user && !usuario) return <LoadingScreen message="Carregando perfil..." showProgress />;
   if (user && usuario) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
