@@ -58,12 +58,26 @@ export default function ModulosUsuario({ usuarioId, onClose }: Props) {
         });
         toast({ title: `Módulo removido` });
       } else {
-        // Activate
+        // Activate — remove mutually exclusive modules first
+        const toRemove = (MUTUALLY_EXCLUSIVE[modulo] || []).filter(m => modulosAtivos.has(m));
+        for (const rem of toRemove) {
+          await (supabase as any)
+            .from('usuario_modulos')
+            .delete()
+            .eq('usuario_id', usuarioId)
+            .eq('modulo', rem);
+        }
+
         await (supabase as any)
           .from('usuario_modulos')
           .insert({ usuario_id: usuarioId, modulo });
 
-        setModulosAtivos(prev => new Set([...prev, modulo]));
+        setModulosAtivos(prev => {
+          const next = new Set(prev);
+          toRemove.forEach(r => next.delete(r));
+          next.add(modulo);
+          return next;
+        });
         toast({ title: `Módulo ativado` });
       }
     } catch (err: any) {
