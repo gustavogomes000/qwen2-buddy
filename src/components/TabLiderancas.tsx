@@ -73,7 +73,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
   const [carregandoMais, setCarregandoMais] = useState(false);
   const paginaRef = useRef(0);
   const [saving, setSaving] = useState(false);
-  const [liderancasExistentes, setLiderancasExistentes] = useState<{ id: string; nome: string }[]>([]);
   const [form, setForm] = useState({ ...emptyForm });
 
   // Ligação política state
@@ -120,13 +119,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
     }
   }, [refreshKey, invalidarCadastros]);
 
-
-  useEffect(() => {
-    supabase.from('liderancas').select('id, pessoas(nome)').eq('status', 'Ativa')
-      .then(({ data }) => {
-        if (data) setLiderancasExistentes(data.map((l: any) => ({ id: l.id, nome: l.pessoas?.nome || '—' })));
-      });
-  }, [isAdmin]);
 
   const handleCPFChange = (value: string) => {
     const cleaned = cleanCPF(value);
@@ -204,9 +196,6 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
 
       toast({ title: '✅ Liderança cadastrada!' });
       setForm({ ...emptyForm });
-      setMode('list');
-      invalidarCadastros();
-      onSaved?.();
       setMode('list');
       invalidarCadastros();
       onSaved?.();

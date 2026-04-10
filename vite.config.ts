@@ -88,6 +88,8 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true, // Auto-update without user prompt
         clientsClaim: true,
+      // Limit precache size for faster SW install
+      maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB max per file
       },
     }),
   ].filter(Boolean),
