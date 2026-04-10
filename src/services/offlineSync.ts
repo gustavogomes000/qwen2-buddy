@@ -1,13 +1,13 @@
 // ── Offline Sync Service ─────────────────────────────────────────────────────
 // Processes pending offline registrations with idempotency (operationId).
-// Uses exponential backoff for retries to reduce battery/network pressure.
+// Uses exponential backoff with proper lastAttemptAt tracking.
 
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { getAllPending, removeFromQueue, updateAttempts, getPendingCount, type OfflineRegistration } from '@/lib/offlineQueue';
 import { requestBackgroundSync } from '@/lib/backgroundSync';
 
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 8; // More retries before giving up (was 5)
 let syncing = false;
 let listeners: Array<() => void> = [];
 
@@ -17,7 +17,7 @@ export function onSyncStatusChange(cb: () => void) {
 }
 
 function notifyListeners() {
-  listeners.forEach(cb => cb());
+  listeners.forEach(cb => { try { cb(); } catch {} });
 }
 
 export async function syncOfflineData(): Promise<{ synced: number; failed: number }> {
@@ -27,28 +27,34 @@ export async function syncOfflineData(): Promise<{ synced: number; failed: numbe
   let failed = 0;
 
   try {
+    // Verify we actually have a valid session before syncing
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('[OfflineSync] No active session, deferring sync');
+      syncing = false;
+      return { synced: 0, failed: 0 };
+    }
+
     const pending = await getAllPending();
     const count = pending.length;
-    logger.info('sync_start', { count: pending.length });
+    logger.info('sync_start', { count });
     if (count === 0) { syncing = false; return { synced: 0, failed: 0 }; }
 
     for (const item of pending) {
       const attempts = item.attempts || 0;
 
-      // Exponential backoff: skip items that haven't waited long enough
-      if (attempts > 0 && attempts < MAX_ATTEMPTS) {
+      // Exponential backoff using ACTUAL lastAttemptAt (not createdAt)
+      if (attempts > 0 && attempts < MAX_ATTEMPTS && item.lastAttemptAt) {
         const backoffMs = Math.min(1000 * Math.pow(2, attempts), 5 * 60 * 1000); // max 5min
-        const elapsed = Date.now() - new Date(item.createdAt).getTime();
-        const lastAttemptAge = elapsed; // simplified — ideally track lastAttemptAt
-        if (attempts > 1 && lastAttemptAge < backoffMs) {
-          console.log(`[OfflineSync] Backoff: skipping ${item.operationId} (wait ${(backoffMs / 1000).toFixed(0)}s)`);
-          continue;
+        const timeSinceLastAttempt = Date.now() - new Date(item.lastAttemptAt).getTime();
+        if (timeSinceLastAttempt < backoffMs) {
+          continue; // Not ready yet — skip silently
         }
       }
 
-      // Skip items that have exceeded max attempts
+      // Skip items that have exceeded max attempts — but DON'T delete them
       if (attempts >= MAX_ATTEMPTS) {
-        console.warn(`[OfflineSync] Skipping item ${item.id} (operationId=${item.operationId}) — max attempts (${MAX_ATTEMPTS}) reached`);
+        console.warn(`[OfflineSync] Item ${item.operationId} reached max attempts (${MAX_ATTEMPTS}). Requires manual intervention.`);
         failed++;
         continue;
       }
@@ -57,10 +63,10 @@ export async function syncOfflineData(): Promise<{ synced: number; failed: numbe
         await syncSingleRegistration(item);
         await removeFromQueue(item.id!);
         synced++;
-        console.log(`[OfflineSync] Synced item ${item.id} operationId=${item.operationId}`);
+        console.log(`[OfflineSync] ✅ Synced operationId=${item.operationId}`);
       } catch (err: any) {
         const errorMsg = err?.message || String(err);
-        console.error(`[OfflineSync] Failed item ${item.id} operationId=${item.operationId}:`, errorMsg);
+        console.error(`[OfflineSync] ❌ Failed operationId=${item.operationId}:`, errorMsg);
         await updateAttempts(item.id!, attempts + 1, errorMsg);
         failed++;
       }
@@ -80,8 +86,6 @@ export async function syncOfflineData(): Promise<{ synced: number; failed: numbe
 
 async function syncSingleRegistration(item: OfflineRegistration) {
   // ── Idempotency check: see if this operationId was already processed ──
-  // We store operationId in the registro's observacoes or a dedicated field.
-  // For deduplication, check if a record with this operationId already exists.
   const existingCheck = await checkOperationIdExists(item);
   if (existingCheck) {
     console.log(`[OfflineSync] operationId=${item.operationId} already exists in DB, skipping`);
@@ -98,9 +102,26 @@ async function syncSingleRegistration(item: OfflineRegistration) {
     }).eq('id', pessoaId);
     if (error) throw error;
   } else {
-    const { data, error } = await supabase.from('pessoas').insert(item.pessoa as any).select('id').single();
-    if (error) throw error;
-    pessoaId = data!.id;
+    // Check if pessoa with same CPF already exists (dedup safety)
+    if (item.pessoa.cpf) {
+      const { data: existing } = await supabase
+        .from('pessoas')
+        .select('id')
+        .eq('cpf', item.pessoa.cpf)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        pessoaId = existing[0].id;
+        console.log(`[OfflineSync] Pessoa with CPF already exists (id=${pessoaId}), reusing`);
+      } else {
+        const { data, error } = await supabase.from('pessoas').insert(item.pessoa as any).select('id').single();
+        if (error) throw error;
+        pessoaId = data!.id;
+      }
+    } else {
+      const { data, error } = await supabase.from('pessoas').insert(item.pessoa as any).select('id').single();
+      if (error) throw error;
+      pessoaId = data!.id;
+    }
   }
 
   // Tag the registro with operationId in observacoes for future dedup
@@ -155,14 +176,14 @@ export function startAutoSync() {
   if (navigator.onLine) {
     syncOfflineData();
   } else {
-    // Request background sync for when connectivity returns (even if app is closed)
     requestBackgroundSync();
   }
 
   if (!onlineHandler) {
     onlineHandler = () => {
       console.log('[OfflineSync] Back online, syncing...');
-      syncOfflineData();
+      // Small delay to let network stabilize
+      setTimeout(() => syncOfflineData(), 2000);
     };
     window.addEventListener('online', onlineHandler);
   }
@@ -172,7 +193,6 @@ export function startAutoSync() {
     if (navigator.onLine) syncOfflineData();
   }, 30_000);
 
-  // Also request background sync for resilience
   requestBackgroundSync();
 }
 

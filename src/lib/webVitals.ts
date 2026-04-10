@@ -21,15 +21,16 @@ function rate(name: string, value: number): Metric['rating'] {
 
 function report(name: string, value: number) {
   const metric: Metric = { name, value: Math.round(value * 100) / 100, rating: rate(name, value) };
-  console.log(`[WebVitals] ${metric.name}: ${metric.value} (${metric.rating})`);
 
-  // Send to analytics if available (non-blocking)
-  if (typeof navigator.sendBeacon === 'function' && import.meta.env.PROD) {
-    try {
-      navigator.sendBeacon('/api/vitals', JSON.stringify(metric));
-    } catch {
-      // Silent fail — vitals are best-effort
-    }
+  // Log only in dev or for poor metrics in prod
+  if (!import.meta.env.PROD || metric.rating === 'poor') {
+    console.log(`[WebVitals] ${metric.name}: ${metric.value} (${metric.rating})`);
+  }
+
+  // Store in window for diagnostics (accessible via window.__sarelliVitals)
+  if (typeof window !== 'undefined') {
+    (window as any).__sarelliVitals = (window as any).__sarelliVitals || {};
+    (window as any).__sarelliVitals[name] = metric;
   }
 }
 
