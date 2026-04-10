@@ -201,7 +201,7 @@ export default function TabFiscais({ refreshKey, onSaved, viewOnly }: Props) {
       secao_fiscal: form.secao_fiscal || null,
       colegio_eleitoral: form.colegio_eleitoral_fiscal || null,
       observacoes: form.observacoes || null,
-      municipio_id: ligMunicipioId || null,
+      municipio_id: ligMunicipioId || cidadeAtiva?.id || null,
       evento_id: eventoAtivo?.id || null,
       origem_captacao: form.regiao_atuacao || null,
     };
