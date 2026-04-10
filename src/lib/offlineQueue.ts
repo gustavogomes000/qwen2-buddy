@@ -14,6 +14,7 @@ export interface OfflineRegistration {
   createdAt: string;
   attempts: number;
   lastError?: string | null;
+  lastAttemptAt?: string | null; // Track last attempt for proper backoff
 }
 
 class OfflineDB extends Dexie {
@@ -21,12 +22,22 @@ class OfflineDB extends Dexie {
 
   constructor() {
     super('rede-sarelli-offline');
+    // Dexie versions must be in ascending order
+    this.version(1).stores({
+      pending_registrations: '++id',
+    });
     this.version(2).stores({
       pending_registrations: '++id, operationId, type, createdAt, attempts',
     });
-    // Auto-upgrade from v1 (raw IDB) — Dexie handles schema migration
-    this.version(1).stores({
-      pending_registrations: '++id',
+    this.version(3).stores({
+      pending_registrations: '++id, operationId, type, createdAt, attempts',
+    }).upgrade(tx => {
+      // Add lastAttemptAt to existing records
+      return tx.table('pending_registrations').toCollection().modify(item => {
+        if (!item.lastAttemptAt) {
+          item.lastAttemptAt = null;
+        }
+      });
     });
   }
 }
@@ -45,7 +56,7 @@ function generateOperationId(): string {
 }
 
 export async function addToOfflineQueue(
-  reg: Omit<OfflineRegistration, 'id' | 'operationId' | 'createdAt' | 'attempts' | 'lastError'>
+  reg: Omit<OfflineRegistration, 'id' | 'operationId' | 'createdAt' | 'attempts' | 'lastError' | 'lastAttemptAt'>
 ): Promise<string> {
   const operationId = generateOperationId();
   await db.pending_registrations.add({
@@ -54,6 +65,7 @@ export async function addToOfflineQueue(
     createdAt: new Date().toISOString(),
     attempts: 0,
     lastError: null,
+    lastAttemptAt: null,
   });
   console.log(`[OfflineQueue] Added item operationId=${operationId}, type=${reg.type}`);
   return operationId;
@@ -76,7 +88,11 @@ export async function removeFromQueue(id: number): Promise<void> {
 }
 
 export async function updateAttempts(id: number, attempts: number, lastError?: string): Promise<void> {
-  await db.pending_registrations.update(id, { attempts, lastError: lastError || null });
+  await db.pending_registrations.update(id, {
+    attempts,
+    lastError: lastError || null,
+    lastAttemptAt: new Date().toISOString(),
+  });
 }
 
 export async function getByOperationId(operationId: string): Promise<OfflineRegistration | undefined> {

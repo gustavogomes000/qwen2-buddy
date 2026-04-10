@@ -13,6 +13,9 @@ interface State {
   errorCount: number;
 }
 
+// Databases that must NEVER be deleted (contain user data)
+const PROTECTED_IDB_NAMES = ['rede-sarelli-offline', 'keyval-store'];
+
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -46,7 +49,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   };
 
   handleClearAndReload = async () => {
-    // Nuclear option: clear everything and reload
+    // Clear caches but PROTECT offline queue and query persistence
     try {
       if ('caches' in window) {
         const names = await caches.keys();
@@ -58,7 +61,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         await Promise.all(registrations.map(r => r.unregister()));
       }
       // Clear localStorage (except auth)
-      const authKeys = ['sb-yvdfdmyusdhgtzfguxbj-auth-token'];
+      const authKeys = ['sb-yvdfdmyusdhgtzfguxbj-auth-token', 'sarelli_cached_usuario', 'sarelli_cached_municipio'];
       const keysToKeep: Record<string, string> = {};
       authKeys.forEach(k => {
         const v = localStorage.getItem(k);
@@ -66,6 +69,21 @@ export class ErrorBoundary extends React.Component<Props, State> {
       });
       localStorage.clear();
       Object.entries(keysToKeep).forEach(([k, v]) => localStorage.setItem(k, v));
+
+      // IMPORTANT: Do NOT delete IndexedDB databases that contain offline data
+      // Only delete non-protected IDB databases
+      if ('indexedDB' in window && indexedDB.databases) {
+        try {
+          const dbs = await indexedDB.databases();
+          for (const dbInfo of dbs) {
+            if (dbInfo.name && !PROTECTED_IDB_NAMES.includes(dbInfo.name)) {
+              indexedDB.deleteDatabase(dbInfo.name);
+            }
+          }
+        } catch {
+          // indexedDB.databases() not available in all browsers — skip
+        }
+      }
     } catch {}
     window.location.href = '/';
   };
@@ -116,7 +134,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </div>
 
           <p className="text-[9px] text-muted-foreground/50 mt-4">
-            Se o problema persistir, entre em contato com o suporte.
+            Seus dados offline estão protegidos e serão sincronizados quando o app voltar.
           </p>
         </div>
       );
