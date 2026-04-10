@@ -93,10 +93,10 @@ function PwaSilentUpdater() {
   } = useRegisterSW({
     onRegisteredSW(_swUrl, registration) {
       if (registration) {
-        // Check for updates every 10 seconds for fast OTA on mobile
+        // Check for updates every 30 seconds (balanced: fast OTA without battery drain)
         setInterval(() => {
           registration.update().catch(() => {});
-        }, 10_000);
+        }, 30_000);
       }
     },
     onRegisterError(error) {
@@ -108,7 +108,9 @@ function PwaSilentUpdater() {
   useEffect(() => {
     if (needRefresh) {
       console.log('[SW] New version available, updating silently...');
-      updateServiceWorker(true);
+      // Small delay to avoid interrupting active operations
+      const t = setTimeout(() => updateServiceWorker(true), 1500);
+      return () => clearTimeout(t);
     }
   }, [needRefresh, updateServiceWorker]);
 

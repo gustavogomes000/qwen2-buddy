@@ -5,6 +5,8 @@ import { useCidade } from '@/contexts/CidadeContext';
 import { useMemo, useCallback, useEffect, useRef } from 'react';
 
 const PAGE_SIZE = 200;
+const STALE_TIME = 60_000;
+const GC_TIME = 15 * 60 * 1000;
 
 /* ── Query keys ── */
 const keys = {
@@ -56,7 +58,7 @@ export function useContagens() {
       };
     },
     staleTime: 60_000,
-    gcTime: 15 * 60 * 1000,
+    gcTime: GC_TIME,
   });
 }
 
@@ -120,8 +122,10 @@ function usePaginatedData(config: {
     getNextPageParam: (lastPage) => lastPage.nextOffset,
     initialPageParam: 0,
     enabled: config.enabled,
-    staleTime: 60_000,
-    gcTime: 15 * 60 * 1000,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    refetchOnMount: false,
+    refetchOnReconnect: 'always',
   });
 
   // Flatten pages for backward-compatible `data` as array
@@ -227,8 +231,8 @@ export function useUsuarios() {
       if (error) throw error;
       return data || [];
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
   });
 }
 
