@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Search, ChevronRight, Phone, MessageCircle, Trash2, ArrowLeft, XCircle, Download, Loader2, ExternalLink, PlusCircle } from 'lucide-react';
+import { Search, ChevronRight, Phone, MessageCircle, Trash2, ArrowLeft, XCircle, Download, Loader2, ExternalLink, PlusCircle, CloudOff } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 
 import CampoLigacaoPolitica from '@/components/CampoLigacaoPolitica';
 import SkeletonLista from '@/components/SkeletonLista';
+import { useOfflineItems, type OfflineListItem } from '@/hooks/useOfflineItems';
 
 const comprometimentos = ['Alto', 'Médio', 'Baixo'];
 const situacoesTitulo = ['Regular', 'Cancelado', 'Suspenso', 'Não informado'];
