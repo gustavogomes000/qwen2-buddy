@@ -59,6 +59,14 @@ export default function TabSuplentes({ refreshKey }: Props) {
   const [superiorId, setSuperiorId] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Create new suplente state
+  const [creatingNewSuplente, setCreatingNewSuplente] = useState(false);
+  const [newSupNome, setNewSupNome] = useState('');
+  const [newSupPartido, setNewSupPartido] = useState('');
+  const [newSupRegiao, setNewSupRegiao] = useState('');
+  const [newSupTelefone, setNewSupTelefone] = useState('');
+  const [savingNewSup, setSavingNewSup] = useState(false);
+
   // Edit user state
   const [editingUser, setEditingUser] = useState<{ hierarquiaUser: HierarchyUser; suplente: SuplenteRow } | null>(null);
   const [editNome, setEditNome] = useState('');
