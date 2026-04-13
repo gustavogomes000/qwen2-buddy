@@ -87,7 +87,7 @@ export async function resolverLigacaoPolitica(
         const sup = data.find((s: any) => String(s.id) === String(usuario.suplente_id));
         if (sup) {
           resultado.nomeFixo = sup.nome;
-          resultado.subtitulo = [sup.partido, sup.regiao_atuacao].filter(Boolean).join(' · ');
+          resultado.subtitulo = [sup.cargo_disputado, sup.partido, sup.regiao_atuacao].filter(Boolean).join(' · ');
           // Upsert into local suplentes table
           try {
             await (supabase as any).from('suplentes').upsert({
