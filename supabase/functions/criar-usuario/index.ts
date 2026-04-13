@@ -111,22 +111,8 @@ Deno.serve(async (req) => {
       });
       authUserId = existingUser.id;
     } else {
-      // Create new auth user
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: senha,
-        email_confirm: true,
-        user_metadata: { name: nome, role: tipo },
-      });
-
-      if (authError) {
-        console.error('Auth error:', authError);
-        return new Response(
-          JSON.stringify({ error: authError.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      authUserId = authData.user?.id || null;
+      // New user was already created above
+      authUserId = authData?.user?.id || null;
     }
 
     if (!authUserId) {
