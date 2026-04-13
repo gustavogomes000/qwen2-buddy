@@ -320,6 +320,26 @@ export default function TabSuplentes({ refreshKey }: Props) {
     );
   };
 
+  const handleCreateNewSuplente = async () => {
+    if (!newSupNome.trim()) { toast({ title: 'Informe o nome do suplente', variant: 'destructive' }); return; }
+    setSavingNewSup(true);
+    try {
+      const { error } = await (supabase as any).from('suplentes').insert({
+        nome: newSupNome.trim(),
+        partido: newSupPartido.trim() || null,
+        regiao_atuacao: newSupRegiao.trim() || null,
+        telefone: newSupTelefone.trim() || null,
+      });
+      if (error) throw new Error(error.message);
+      toast({ title: '✅ Suplente criado!', description: `${newSupNome.trim()} adicionado com sucesso` });
+      setCreatingNewSuplente(false);
+      setNewSupNome(''); setNewSupPartido(''); setNewSupRegiao(''); setNewSupTelefone('');
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally { setSavingNewSup(false); }
+  };
+
   const inputCls = "w-full h-11 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30";
 
   // EDIT USER VIEW
