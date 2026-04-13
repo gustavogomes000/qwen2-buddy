@@ -443,7 +443,7 @@ export default function CampoLigacaoPolitica({
                 <p className="text-[10px] text-muted-foreground">
                   {s.origem === 'interno'
                     ? [s.regiao_atuacao].filter(Boolean).join(' · ') || 'Usuário interno'
-                    : [s.partido, s.regiao_atuacao].filter(Boolean).join(' · ') || '—'}
+                    : [(s as any).cargo_disputado, s.partido, s.regiao_atuacao].filter(Boolean).join(' · ') || '—'}
                 </p>
               </button>
             ))}
