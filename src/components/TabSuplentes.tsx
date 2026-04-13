@@ -331,11 +331,12 @@ export default function TabSuplentes({ refreshKey }: Props) {
         partido: newSupPartido.trim() || null,
         regiao_atuacao: newSupRegiao.trim() || null,
         telefone: newSupTelefone.trim() || null,
+        cargo_disputado: newSupCargo.trim() || null,
       });
       if (error) throw new Error(error.message);
       toast({ title: '✅ Suplente criado!', description: `${newSupNome.trim()} adicionado com sucesso` });
       setCreatingNewSuplente(false);
-      setNewSupNome(''); setNewSupPartido(''); setNewSupRegiao(''); setNewSupTelefone('');
+      setNewSupNome(''); setNewSupPartido(''); setNewSupRegiao(''); setNewSupTelefone(''); setNewSupCargo('');
       fetchAll();
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
