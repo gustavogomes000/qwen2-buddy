@@ -571,7 +571,7 @@ export default function TabSuplentes({ refreshKey }: Props) {
             <div>
               <h2 className="text-lg font-bold text-foreground">{selected.nome}</h2>
               <p className="text-xs text-muted-foreground">
-                {selected.partido || '—'} · {selected.regiao_atuacao || '—'} · {selected.situacao || '—'}
+                {[selected.cargo_disputado, selected.partido, selected.regiao_atuacao, selected.situacao].filter(Boolean).join(' · ') || '—'}
               </p>
             </div>
             {temAcesso ? (
@@ -692,7 +692,7 @@ export default function TabSuplentes({ refreshKey }: Props) {
                   <div className="flex-1 min-w-0">
                     <span className="font-semibold text-foreground text-sm truncate block">{s.nome}</span>
                     <p className="text-[10px] text-muted-foreground truncate">
-                      {s.partido || '—'} · {s.regiao_atuacao || '—'}
+                      {[s.cargo_disputado, s.partido, s.regiao_atuacao].filter(Boolean).join(' · ') || '—'}
                     </p>
                   </div>
                 </button>
