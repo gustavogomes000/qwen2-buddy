@@ -17,6 +17,7 @@ interface SuplenteExterno {
   regiao_atuacao: string | null;
   telefone: string | null;
   partido: string | null;
+  cargo_disputado: string | null;
 }
 
 interface LiderancaExterna {
