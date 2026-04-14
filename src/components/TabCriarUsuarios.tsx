@@ -375,10 +375,11 @@ export default function TabCriarUsuarios() {
             {/* Tipo de acesso */}
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Tipo de acesso</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {([
                   { key: 'suplente' as TipoAcesso, label: 'Suplente', icon: User },
                   { key: 'lideranca' as TipoAcesso, label: 'Liderança', icon: Users },
+                  { key: 'coordenador' as TipoAcesso, label: 'Coordenador', icon: Shield },
                 ]).map(({ key, label, icon: Icon }) => (
                   <button key={key}
                     onClick={() => setTipoAcesso(key)}
