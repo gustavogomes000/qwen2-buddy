@@ -918,6 +918,11 @@ export default function TabPerfil() {
                         {getSuplenteNome(u.suplente_id) ? ` · ${getSuplenteNome(u.suplente_id)}` : ''}
                         {u.municipio_id && (() => { const m = municipios.find(m => m.id === u.municipio_id); return m ? ` · ${m.nome}` : ''; })()}
                       </p>
+                      {getSuplenteTag(u.suplente_id) && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-accent/50 text-[9px] font-medium text-accent-foreground mt-0.5">
+                          {getSuplenteTag(u.suplente_id)}
+                        </span>
+                      )}
                     </div>
                     <Pencil size={14} className="text-muted-foreground shrink-0" />
                   </button>
