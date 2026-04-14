@@ -73,6 +73,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const loading = lidLoading || fisLoading || eleLoading;
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filtroTag, setFiltroTag] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
