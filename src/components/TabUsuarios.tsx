@@ -796,6 +796,11 @@ export default function TabUsuarios() {
                   <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tipoColor(u.tipo)}`}>{tipoLabel(u.tipo)}</span>
+                    {u.suplente_id && cargoMap[u.suplente_id] && (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-600">
+                        {cargoMap[u.suplente_id]}
+                      </span>
+                    )}
                     {u.municipio_id && (
                       <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
                         <MapPin size={8} />{municipios.find(m => m.id === u.municipio_id)?.nome || ''}
