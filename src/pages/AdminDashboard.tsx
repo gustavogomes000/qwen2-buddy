@@ -373,6 +373,9 @@ export default function AdminDashboard() {
                       <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">{tipoLabel(u.tipo)}</span>
+                        {getCargoTag(u.suplente_id) && (
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-accent/50 text-accent-foreground font-medium">{getCargoTag(u.suplente_id)}</span>
+                        )}
                         {cityName && (
                           <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
                             <MapPin size={8} />{cityName}
