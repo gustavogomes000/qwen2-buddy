@@ -262,6 +262,12 @@ export default function TabPerfil() {
     return suplentes.find(s => s.id === sid)?.nome || null;
   };
 
+  const getSuplenteTag = (sid: string | null) => {
+    if (!sid) return null;
+    const sup = suplentes.find(s => s.id === sid);
+    return sup?.cargo_disputado || null;
+  };
+
   const copiar = (texto: string, label: string) => {
     navigator.clipboard.writeText(texto);
     toast({ title: `${label} copiado!` });
