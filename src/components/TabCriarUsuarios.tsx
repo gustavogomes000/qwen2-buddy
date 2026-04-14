@@ -33,7 +33,7 @@ interface HierarchyUser {
 }
 
 type VinculoTab = 'suplente' | 'lideranca';
-type TipoAcesso = 'suplente' | 'lideranca';
+type TipoAcesso = 'suplente' | 'lideranca' | 'coordenador';
 
 export default function TabCriarUsuarios() {
   const { isAdmin } = useAuth();
