@@ -474,6 +474,9 @@ export default function TabEleitores({ refreshKey, onSaved, viewOnly }: Props) {
                   <span className="font-semibold text-foreground text-sm truncate">{e.pessoas?.nome || '—'}</span>
                   {compromissoBadge(e.compromisso_voto)}
                 </div>
+                {(e as any).suplentes?.nome && (
+                  <p className="text-[10px] text-primary/70 truncate">🔗 {(e as any).suplentes.nome}{(e as any).suplentes.cargo_disputado ? ` · ${(e as any).suplentes.cargo_disputado}` : ''}</p>
+                )}
                 {e.origem_captacao && (
                   <p className="text-[10px] text-muted-foreground truncate">{e.origem_captacao}</p>
                 )}
