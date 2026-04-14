@@ -138,7 +138,94 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Ação inválida. Use: resetar_senhas, apagar_teste, listar' }), {
+    // ── DIAGNÓSTICO COMPLETO ──
+    if (acao === 'diagnostico') {
+      const [
+        { data: usuarios },
+        { count: totalLid },
+        { count: totalEle },
+        { count: totalFis },
+        { data: suplentes },
+      ] = await Promise.all([
+        supabaseAdmin.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, municipio_id, ativo').eq('ativo', true).order('nome'),
+        supabaseAdmin.from('liderancas').select('id', { count: 'exact', head: true }),
+        supabaseAdmin.from('possiveis_eleitores').select('id', { count: 'exact', head: true }),
+        supabaseAdmin.from('fiscais').select('id', { count: 'exact', head: true }),
+        supabaseAdmin.from('suplentes').select('id, nome, cargo_disputado'),
+      ]);
+
+      return new Response(JSON.stringify({
+        usuarios_ativos: usuarios?.length || 0,
+        lista_usuarios: usuarios,
+        total_liderancas: totalLid || 0,
+        total_eleitores: totalEle || 0,
+        total_fiscais: totalFis || 0,
+        suplentes_com_cargo: suplentes?.filter(s => s.cargo_disputado) || [],
+        suplentes_todos: suplentes || [],
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // ── ATUALIZAR CARGO/PROFISSÃO ──
+    if (acao === 'atualizar_cargo') {
+      const { nome_busca, cargo } = body;
+      if (!nome_busca || !cargo) {
+        return new Response(JSON.stringify({ error: 'nome_busca e cargo são obrigatórios' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: users } = await supabaseAdmin
+        .from('hierarquia_usuarios')
+        .select('id, nome, suplente_id, tipo')
+        .ilike('nome', `%${nome_busca}%`)
+        .eq('ativo', true);
+
+      if (!users || users.length === 0) {
+        return new Response(JSON.stringify({ ok: false, erro: 'Usuário não encontrado' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const user = users[0];
+      let updated = false;
+      let detalhes = '';
+
+      if (user.suplente_id) {
+        const { error } = await supabaseAdmin
+          .from('suplentes')
+          .update({ cargo_disputado: cargo, updated_at: new Date().toISOString() })
+          .eq('id', user.suplente_id);
+        updated = !error;
+        detalhes = error ? `Erro: ${error.message}` : `Atualizado suplente ${user.suplente_id}`;
+      } else if (user.tipo === 'suplente') {
+        // Livre suplente - create suplente record
+        const { error } = await supabaseAdmin
+          .from('suplentes')
+          .upsert({
+            id: user.id,
+            nome: user.nome,
+            cargo_disputado: cargo,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'id' });
+
+        if (!error) {
+          await supabaseAdmin
+            .from('hierarquia_usuarios')
+            .update({ suplente_id: user.id })
+            .eq('id', user.id);
+          updated = true;
+          detalhes = `Criado suplente livre com cargo e vinculado`;
+        } else {
+          detalhes = `Erro: ${error.message}`;
+        }
+      } else {
+        detalhes = `Usuário tipo ${user.tipo} sem suplente_id — não é possível atribuir cargo`;
+      }
+
+      return new Response(JSON.stringify({ ok: updated, usuario: user, detalhes }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    return new Response(JSON.stringify({ error: 'Ação inválida. Use: resetar_senhas, apagar_teste, listar, diagnostico, atualizar_cargo' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
