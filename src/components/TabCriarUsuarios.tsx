@@ -52,6 +52,8 @@ export default function TabCriarUsuarios() {
   // "Criar novo" (local suplente) mode
   const [criarNovoMode, setCriarNovoMode] = useState(false);
   const [novoProfissao, setNovoProfissao] = useState('');
+  // Cargo field for existing suplente
+  const [cargoExistente, setCargoExistente] = useState('');
 
   // Form state
   const [tipoAcesso, setTipoAcesso] = useState<TipoAcesso>('suplente');
@@ -112,6 +114,13 @@ export default function TabCriarUsuarios() {
     setCidadeSelecionada('');
     setCidadeErro('');
     setCriarNovoMode(false);
+    // Load existing cargo for suplente
+    if (tipo === 'suplente') {
+      const sup = suplentes.find(s => s.id === id);
+      setCargoExistente((sup as any)?.cargo_disputado || 'Suplente');
+    } else {
+      setCargoExistente('');
+    }
   };
 
   const handleStartCriarNovo = () => {
@@ -179,7 +188,17 @@ export default function TabCriarUsuarios() {
         superior_id: superiorId || null,
         municipio_id: cidadeSelecionada,
       };
-      if (selecionado.tipo === 'suplente') payload.suplente_id = selecionado.id;
+      if (selecionado.tipo === 'suplente') {
+        payload.suplente_id = selecionado.id;
+        // Update cargo_disputado on the suplentes table
+        if (cargoExistente.trim()) {
+          try {
+            await (supabase as any).from('suplentes').update({
+              cargo_disputado: cargoExistente.trim(),
+            }).eq('id', selecionado.id);
+          } catch {}
+        }
+      }
 
       const { data, error } = await supabase.functions.invoke('criar-usuario', { body: payload });
       if (error) throw new Error(error.message || 'Erro ao criar usuário');
@@ -365,6 +384,15 @@ export default function TabCriarUsuarios() {
                 ))}
               </div>
             </div>
+
+            {/* Cargo / Profissão (only for suplente) */}
+            {selecionado.tipo === 'suplente' && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Cargo / Profissão</label>
+                <input type="text" value={cargoExistente} onChange={e => setCargoExistente(e.target.value)} className={inputCls} placeholder="Ex: Suplente, Assistente Social, Vereador..." />
+                <p className="text-[10px] text-muted-foreground">Aparece no lugar de "Suplente" nas listas</p>
+              </div>
+            )}
 
             {/* Nome */}
             <div className="space-y-1">

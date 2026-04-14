@@ -74,6 +74,7 @@ export default function TabSuplentes({ refreshKey }: Props) {
   const [editNome, setEditNome] = useState('');
   const [editSenha, setEditSenha] = useState('');
   const [showEditSenha, setShowEditSenha] = useState(false);
+  const [editCargo, setEditCargo] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -208,18 +209,27 @@ export default function TabSuplentes({ refreshKey }: Props) {
     setEditingUser({ hierarquiaUser: user, suplente: sup });
     setEditNome(user.nome);
     setEditSenha('');
+    setEditCargo(sup.cargo_disputado || 'Suplente');
     setShowEditSenha(false);
     setConfirmDelete(false);
   };
 
   const handleEditUser = async () => {
     if (!editingUser) return;
-    const { hierarquiaUser } = editingUser;
+    const { hierarquiaUser, suplente } = editingUser;
     if (!editNome.trim()) { toast({ title: 'Nome não pode ser vazio', variant: 'destructive' }); return; }
     if (editSenha && editSenha.length < 6) { toast({ title: 'Senha deve ter ao menos 6 caracteres', variant: 'destructive' }); return; }
 
     setEditSaving(true);
     try {
+      // Update cargo on suplentes table
+      const newCargo = editCargo.trim() || null;
+      if (newCargo !== (suplente.cargo_disputado || null)) {
+        await (supabase as any).from('suplentes').update({
+          cargo_disputado: newCargo,
+        }).eq('id', suplente.id);
+      }
+
       const payload: any = {
         acao: 'atualizar',
         hierarquia_id: hierarquiaUser.id,
@@ -228,13 +238,11 @@ export default function TabSuplentes({ refreshKey }: Props) {
       if (editNome.trim() !== hierarquiaUser.nome) payload.novo_nome = editNome.trim();
       if (editSenha.trim()) payload.nova_senha = editSenha.trim();
 
-      if (!payload.novo_nome && !payload.nova_senha) {
-        toast({ title: 'Nenhuma alteração' }); setEditSaving(false); return;
+      if (payload.novo_nome || payload.nova_senha) {
+        const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body: payload });
+        if (error) throw new Error(error.message);
+        if (data?.error) throw new Error(data.error);
       }
-
-      const { data, error } = await supabase.functions.invoke('gerenciar-usuario', { body: payload });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
 
       toast({ title: '✅ Usuário atualizado!' });
       setEditingUser(null);
@@ -423,6 +431,12 @@ export default function TabSuplentes({ refreshKey }: Props) {
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Nome de acesso</label>
               <input type="text" value={editNome} onChange={e => setEditNome(e.target.value)} className={inputCls} />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Cargo / Profissão</label>
+              <input type="text" value={editCargo} onChange={e => setEditCargo(e.target.value)} className={inputCls} placeholder="Ex: Suplente, Assistente Social, Vereador..." />
+              <p className="text-[10px] text-muted-foreground">Aparece no lugar de "Suplente" nas listas</p>
             </div>
 
             <div className="space-y-1">
