@@ -181,6 +181,7 @@ export default function TabPerfil() {
   const [saving, setSaving] = useState(false);
   const [externalSearch, setExternalSearch] = useState('');
   const [createCidade, setCreateCidade] = useState('');
+  const [cargoTagPerfil, setCargoTagPerfil] = useState('');
 
   // Edit
   const [editUser, setEditUser] = useState<UsuarioItem | null>(null);
@@ -278,6 +279,7 @@ export default function TabPerfil() {
     setSelectedModulos(new Set());
     setExternalSearch('');
     setCreateCidade(municipios.length === 1 ? municipios[0].id : '');
+    setCargoTagPerfil('');
   };
 
   const handleCreate = async () => {
@@ -304,6 +306,20 @@ export default function TabPerfil() {
 
     setSaving(true);
     try {
+      let suplenteIdParaVinculo: string | null = null;
+
+      // For livre mode with suplente/lideranca, create a local suplente with the cargo tag
+      if (createMode === 'livre' && (tipoNovo === 'suplente' || tipoNovo === 'lideranca')) {
+        const cargoBase = cargoTagPerfil.trim() || (tipoNovo === 'lideranca' ? 'Liderança' : 'Suplente');
+        const { data: novoSup, error: novoSupError } = await (supabase as any)
+          .from('suplentes')
+          .insert({ nome: nomeUsuario, cargo_disputado: cargoBase })
+          .select('id')
+          .single();
+        if (novoSupError) throw new Error(novoSupError.message);
+        suplenteIdParaVinculo = novoSup.id;
+      }
+
       const body: any = {
         nome: nomeUsuario,
         senha: senhaNova.trim(),
@@ -313,6 +329,9 @@ export default function TabPerfil() {
       };
       if (createMode === 'suplente' && selectedExternalId) {
         body.suplente_id = selectedExternalId;
+      }
+      if (suplenteIdParaVinculo) {
+        body.suplente_id = suplenteIdParaVinculo;
       }
 
       const { data, error } = await supabase.functions.invoke('criar-usuario', { body });
@@ -604,6 +623,21 @@ export default function TabPerfil() {
                 ))}
               </div>
             </div>
+
+            {/* Profissão / Cargo (tag) — only for livre mode with suplente/lideranca */}
+            {createMode === 'livre' && (tipoNovo === 'suplente' || tipoNovo === 'lideranca') && (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Profissão / Cargo (tag)</label>
+                <input
+                  type="text"
+                  value={cargoTagPerfil}
+                  onChange={e => setCargoTagPerfil(e.target.value)}
+                  className={inputCls}
+                  placeholder="Ex: Assistente Social, Vereador, Empresário..."
+                />
+                <p className="text-[10px] text-muted-foreground">Essa tag aparece no perfil e nos filtros de cadastros</p>
+              </div>
+            )}
 
             {/* Senha */}
             <div className="space-y-1">
