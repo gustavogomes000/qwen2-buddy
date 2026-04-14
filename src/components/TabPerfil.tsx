@@ -42,6 +42,7 @@ interface SuplenteOption {
   nome: string;
   regiao_atuacao: string | null;
   telefone: string | null;
+  cargo_disputado?: string | null;
 }
 
 interface LiderancaOption {
@@ -254,12 +255,24 @@ export default function TabPerfil() {
   const filteredUsuarios = useMemo(() => {
     if (!search) return usuarios;
     const q = search.toLowerCase();
-    return usuarios.filter(u => u.nome.toLowerCase().includes(q));
-  }, [usuarios, search]);
+    return usuarios.filter(u => {
+      if (u.nome.toLowerCase().includes(q)) return true;
+      // Search by profession/tag from suplente
+      const tag = u.suplente_id ? suplentes.find(s => s.id === u.suplente_id)?.cargo_disputado : null;
+      if (tag && tag.toLowerCase().includes(q)) return true;
+      return false;
+    });
+  }, [usuarios, search, suplentes]);
 
   const getSuplenteNome = (sid: string | null) => {
     if (!sid) return null;
     return suplentes.find(s => s.id === sid)?.nome || null;
+  };
+
+  const getSuplenteTag = (sid: string | null) => {
+    if (!sid) return null;
+    const sup = suplentes.find(s => s.id === sid);
+    return sup?.cargo_disputado || null;
   };
 
   const copiar = (texto: string, label: string) => {
@@ -905,6 +918,11 @@ export default function TabPerfil() {
                         {getSuplenteNome(u.suplente_id) ? ` · ${getSuplenteNome(u.suplente_id)}` : ''}
                         {u.municipio_id && (() => { const m = municipios.find(m => m.id === u.municipio_id); return m ? ` · ${m.nome}` : ''; })()}
                       </p>
+                      {getSuplenteTag(u.suplente_id) && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-accent/50 text-[9px] font-medium text-accent-foreground mt-0.5">
+                          {getSuplenteTag(u.suplente_id)}
+                        </span>
+                      )}
                     </div>
                     <Pencil size={14} className="text-muted-foreground shrink-0" />
                   </button>
