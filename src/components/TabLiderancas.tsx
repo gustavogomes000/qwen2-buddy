@@ -335,6 +335,13 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
           <Info label="Comprometimento" value={l.nivel_comprometimento} />
           <Info label="Observações" value={l.observacoes} />
         </div>
+        {l.suplentes && (
+          <div className="section-card">
+            <h3 className="section-title">🔗 Vinculado a</h3>
+            <Info label="Suplente" value={l.suplentes.nome} />
+            {l.suplentes.cargo_disputado && <Info label="Cargo / Profissão" value={l.suplentes.cargo_disputado} />}
+          </div>
+        )}
         <div className="space-y-2">
           {isAdmin && l.status !== 'Descartada' && (
             <button onClick={() => handleDiscard(l.id)} className="w-full h-11 border border-border rounded-xl text-muted-foreground font-medium flex items-center justify-center gap-2 active:scale-[0.97]">
@@ -515,6 +522,9 @@ export default function TabLiderancas({ refreshKey, onSaved, viewOnly }: Props) 
                     <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400">Visita</span>
                   )}
                 </div>
+                {l.suplentes?.nome && (
+                  <p className="text-[10px] text-primary/70 truncate">🔗 {l.suplentes.nome}{l.suplentes.cargo_disputado ? ` · ${l.suplentes.cargo_disputado}` : ''}</p>
+                )}
                 {l.regiao_atuacao && (
                   <p className="text-[10px] text-muted-foreground truncate">{l.regiao_atuacao}</p>
                 )}
