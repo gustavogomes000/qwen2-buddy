@@ -292,15 +292,6 @@ export default function TabCriarUsuarios() {
               </div>
             </div>
 
-            {/* Criar Novo button */}
-            {vinculoTab === 'suplente' && (
-              <button
-                onClick={handleStartCriarNovo}
-                className="w-full mb-3 h-11 flex items-center justify-center gap-2 bg-primary/10 text-primary text-sm font-semibold rounded-xl border border-primary/20 active:scale-[0.97] transition-all"
-              >
-                <Plus size={16} /> Criar novo (sem vínculo externo)
-              </button>
-            )}
 
             {/* ── Results list ── */}
             <div className="space-y-1 max-h-[250px] overflow-y-auto">
