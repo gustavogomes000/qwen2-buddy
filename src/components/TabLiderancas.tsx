@@ -45,6 +45,7 @@ interface LiderancaRow {
   criado_em: string;
   pessoas: { nome: string; cpf: string | null; telefone: string | null; whatsapp: string | null; email: string | null; instagram: string | null; facebook: string | null; titulo_eleitor: string | null; zona_eleitoral: string | null; secao_eleitoral: string | null; municipio_eleitoral: string | null; uf_eleitoral: string | null; colegio_eleitoral: string | null; endereco_colegio: string | null; situacao_titulo: string | null; };
   hierarquia_usuarios: { nome: string } | null;
+  suplentes: { nome: string; cargo_disputado: string | null } | null;
   regiao_atuacao: string | null;
   bairros_influencia: string | null;
   comunidades_influencia: string | null;
