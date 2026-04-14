@@ -112,6 +112,19 @@ export default function AdminDashboard() {
   const usuarios = (usuariosData || []) as unknown as HierarquiaUsuario[];
   const loading = lLoading || eLoading || fLoading || uLoading;
 
+  // Suplentes map for cargo_disputado tag
+  const [suplentesTags, setSuplentesTags] = useState<Record<string, string>>({});
+  useEffect(() => {
+    (supabase as any).from('suplentes').select('id, cargo_disputado').then(({ data }: any) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const s of data) { if (s.cargo_disputado) map[s.id] = s.cargo_disputado; }
+        setSuplentesTags(map);
+      }
+    });
+  }, []);
+  const getCargoTag = (supId: string | null) => supId ? suplentesTags[supId] || null : null;
+
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [expandedTipo, setExpandedTipo] = useState<string | null>(null);
   const [popupUser, setPopupUser] = useState<string | null>(null);
@@ -157,7 +170,7 @@ export default function AdminDashboard() {
     return Object.entries(map)
       .map(([id, stats]) => {
         const u = usuarios.find(u => u.id === id);
-        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, total: stats.l + stats.e + stats.f, ...stats };
+        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, suplente_id: u?.suplente_id || null, total: stats.l + stats.e + stats.f, ...stats };
       })
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
   }, [filteredL, filteredE, filteredF, usuarios]);
@@ -169,7 +182,7 @@ export default function AdminDashboard() {
     // Don't filter by city here — show all users and let the UI indicate city
     if (searchTerm) {
       const s = searchTerm.toLowerCase();
-      list = list.filter(u => u.nome.toLowerCase().includes(s));
+      list = list.filter(u => u.nome.toLowerCase().includes(s) || (getCargoTag(u.suplente_id) || '').toLowerCase().includes(s));
     }
     // Sort: users with matching city first, then others
     if (filtroMunicipioId) {
@@ -360,6 +373,9 @@ export default function AdminDashboard() {
                       <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-primary/10 text-primary">{tipoLabel(u.tipo)}</span>
+                        {getCargoTag(u.suplente_id) && (
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-accent/50 text-accent-foreground font-medium">{getCargoTag(u.suplente_id)}</span>
+                        )}
                         {cityName && (
                           <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
                             <MapPin size={8} />{cityName}
@@ -489,7 +505,7 @@ export default function AdminDashboard() {
           // Busca por nome
           if (rankingSearch) {
             const s = rankingSearch.toLowerCase();
-            filtered = filtered.filter(u => u.nome.toLowerCase().includes(s));
+            filtered = filtered.filter(u => u.nome.toLowerCase().includes(s) || (getCargoTag(u.suplente_id) || '').toLowerCase().includes(s));
           }
 
           const maxTotal = filtered.length > 0 ? Math.max(...filtered.map(u => u.total), 1) : 1;
@@ -551,6 +567,9 @@ export default function AdminDashboard() {
                             <p className="text-sm font-bold text-foreground truncate">{u.nome}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{tipoLabel(u.tipo)}</span>
+                              {getCargoTag(u.suplente_id) && (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-accent/50 text-accent-foreground font-medium">{getCargoTag(u.suplente_id)}</span>
+                              )}
                               <div className="flex gap-1">
                                 {u.l > 0 && <span className="text-[8px] font-semibold text-primary/70">Lid. {u.l}</span>}
                                 {u.e > 0 && <span className="text-[8px] font-semibold text-muted-foreground">Eleit. {u.e}</span>}
@@ -594,6 +613,9 @@ export default function AdminDashboard() {
                             <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{tipoLabel(u.tipo)}</span>
+                              {getCargoTag(u.suplente_id) && (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-accent/50 text-accent-foreground font-medium">{getCargoTag(u.suplente_id)}</span>
+                              )}
                               {u.municipio_id && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><MapPin size={8} />{nomeMunicipioPorId(u.municipio_id)}</span>}
                             </div>
                           </div>
@@ -868,6 +890,9 @@ export default function AdminDashboard() {
                 <p className="text-base font-bold text-foreground truncate">{popupUserData.usuario?.nome || 'Desconhecido'}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-primary/10 text-primary">{tipoLabel(popupUserData.usuario?.tipo || '')}</span>
+                  {getCargoTag(popupUserData.usuario?.suplente_id || null) && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-accent/50 text-accent-foreground font-medium">{getCargoTag(popupUserData.usuario?.suplente_id || null)}</span>
+                  )}
                   {popupUserData.usuario?.municipio_id && (
                     <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                       <MapPin size={9} />{nomeMunicipioPorId(popupUserData.usuario.municipio_id)}
