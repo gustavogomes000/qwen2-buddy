@@ -42,6 +42,7 @@ interface SuplenteOption {
   nome: string;
   regiao_atuacao: string | null;
   telefone: string | null;
+  cargo_disputado?: string | null;
 }
 
 interface LiderancaOption {
