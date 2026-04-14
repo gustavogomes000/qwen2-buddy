@@ -17,6 +17,7 @@ interface SuplenteExterno {
   regiao_atuacao: string | null;
   telefone: string | null;
   partido: string | null;
+  cargo_disputado: string | null;
 }
 
 interface LiderancaExterna {
@@ -89,16 +90,30 @@ export default function TabUsuarios() {
   const [locHistory, setLocHistory] = useState<any[]>([]);
   const [locLoading, setLocLoading] = useState(false);
 
+  const [cargoMap, setCargoMap] = useState<Record<string, string>>({});
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [supRes, lidRes, usrRes] = await Promise.all([
+    const [supRes, lidRes, usrRes, localSupRes] = await Promise.all([
       supabase.functions.invoke('buscar-suplentes'),
       supabase.functions.invoke('buscar-liderancas-externo'),
       supabase.from('hierarquia_usuarios').select('id, nome, tipo, suplente_id, auth_user_id, ativo, municipio_id').eq('ativo', true).order('nome'),
+      (supabase as any).from('suplentes').select('id, cargo_disputado').not('cargo_disputado', 'is', null),
     ]);
     if (!supRes.error && supRes.data) setSuplentes(supRes.data);
     if (!lidRes.error && lidRes.data) setLiderancas(lidRes.data);
     setUsuarios((usrRes.data || []) as HierarchyUser[]);
+
+    // Build cargo map from both external and local suplentes
+    const map: Record<string, string> = {};
+    if (Array.isArray(supRes.data)) {
+      supRes.data.forEach((s: any) => { if (s.cargo_disputado) map[s.id] = s.cargo_disputado; });
+    }
+    if (Array.isArray(localSupRes?.data)) {
+      localSupRes.data.forEach((s: any) => { if (s.cargo_disputado) map[s.id] = s.cargo_disputado; });
+    }
+    setCargoMap(map);
+
     setLoading(false);
   }, []);
 
@@ -714,7 +729,14 @@ export default function TabUsuarios() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{s.nome}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{s.partido || '—'} · {s.regiao_atuacao || '—'}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] text-muted-foreground truncate">{s.partido || '—'} · {s.regiao_atuacao || '—'}</span>
+                      {s.cargo_disputado && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-600">
+                          {s.cargo_disputado}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {temAcesso && user ? (
                     <button onClick={() => openEdit(user)}
@@ -781,6 +803,11 @@ export default function TabUsuarios() {
                   <p className="text-sm font-semibold text-foreground truncate">{u.nome}</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tipoColor(u.tipo)}`}>{tipoLabel(u.tipo)}</span>
+                    {u.suplente_id && cargoMap[u.suplente_id] && (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-600">
+                        {cargoMap[u.suplente_id]}
+                      </span>
+                    )}
                     {u.municipio_id && (
                       <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
                         <MapPin size={8} />{municipios.find(m => m.id === u.municipio_id)?.nome || ''}

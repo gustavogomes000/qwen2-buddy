@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCidade } from '@/contexts/CidadeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useLiderancas, useEleitores, useFiscaisAdmin, useInvalidarCadastros } from '@/hooks/useDataCache';
-import { Search, Users, Target, Phone, MapPin, Loader2, Download, UserCheck, Calendar, ChevronDown, Mail, MessageCircle, CreditCard, FileText, Globe, Trash2 } from 'lucide-react';
+import { Search, Users, Target, Phone, MapPin, Loader2, Download, UserCheck, Calendar, ChevronDown, Mail, MessageCircle, CreditCard, FileText, Globe, Trash2, Tag } from 'lucide-react';
 import { exportAllCadastros } from '@/lib/exportXlsx';
 import { formatCPF } from '@/lib/cpf';
 import { toast } from '@/hooks/use-toast';
@@ -47,6 +47,7 @@ interface CadastroUnificado {
   lideranca_nome: string | null;
   // Eleitor specific
   compromisso_voto: string | null;
+  cargo_tag: string | null;
 }
 
 const tipoConfig = {
@@ -72,6 +73,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
   const loading = lidLoading || fisLoading || eleLoading;
   const [tipoFiltro, setTipoFiltro] = useState<TipoFiltro>('todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filtroTag, setFiltroTag] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -108,6 +110,7 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     origem_captacao: item.origem_captacao || null,
     lideranca_nome: null as string | null,
     compromisso_voto: null as string | null,
+    cargo_tag: item.suplentes?.cargo_disputado || null,
   });
 
   const cadastros = useMemo(() => {
@@ -162,16 +165,24 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
     return { total, liderancas, fiscais, eleitores };
   }, [cadastros]);
 
+  const tagsDisponiveis = useMemo(() => {
+    const tags = new Set<string>();
+    cadastros.forEach(c => { if (c.cargo_tag) tags.add(c.cargo_tag); });
+    return Array.from(tags).sort();
+  }, [cadastros]);
+
   const filtered = useMemo(() => {
     let list = cadastros;
     if (tipoFiltro !== 'todos') list = list.filter(c => c.tipo === tipoFiltro);
+    if (filtroTag) list = list.filter(c => c.cargo_tag === filtroTag);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(c =>
         c.nome.toLowerCase().includes(q) ||
         (c.cpf && c.cpf.includes(q)) ||
         (c.telefone && c.telefone.includes(q)) ||
-        (c.cadastrado_por_nome && c.cadastrado_por_nome.toLowerCase().includes(q))
+        (c.cadastrado_por_nome && c.cadastrado_por_nome.toLowerCase().includes(q)) ||
+        (c.cargo_tag && c.cargo_tag.toLowerCase().includes(q))
       );
     }
     return list;
@@ -258,6 +269,30 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
         />
       </div>
 
+      {/* Tag filter */}
+      {tagsDisponiveis.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <button
+            onClick={() => setFiltroTag(null)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all flex items-center gap-1 ${
+              !filtroTag ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            <Tag size={10} /> Todas tags
+          </button>
+          {tagsDisponiveis.map(tag => (
+            <button key={tag}
+              onClick={() => setFiltroTag(filtroTag === tag ? null : tag)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all active:scale-95 ${
+                filtroTag === tag ? 'bg-primary text-primary-foreground' : 'bg-emerald-500/10 text-emerald-600'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Export */}
       <button data-testid="btn-exportar" onClick={handleExport} disabled={exporting}
         className="w-full h-9 flex items-center justify-center gap-2 bg-card border border-border rounded-xl text-xs font-medium text-foreground active:scale-[0.97] transition-all disabled:opacity-50">
@@ -293,6 +328,11 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
                       <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${config.color}`}>
                         {config.label}
                       </span>
+                      {c.cargo_tag && (
+                        <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-600">
+                          {c.cargo_tag}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
