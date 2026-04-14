@@ -258,12 +258,20 @@ export default function TabCriarUsuarios() {
               <button key={key}
                 onClick={() => { setVinculoTab(key); setSearch(''); setSelecionado(null); setCriarNovoMode(false); }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
-                  vinculoTab === key ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
+                  vinculoTab === key && !criarNovoMode ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
                 }`}
               >
                 <Icon size={14} /> {label}
               </button>
             ))}
+            <button
+              onClick={() => { setCriarNovoMode(true); setSelecionado(null); setSearch(''); setNovoProfissao('Suplente'); }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                criarNovoMode ? 'gradient-primary text-white shadow-lg' : 'bg-card border border-border text-muted-foreground'
+              }`}
+            >
+              <Edit3 size={14} /> Livre
+            </button>
           </div>
         </div>
 
