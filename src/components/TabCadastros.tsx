@@ -497,6 +497,8 @@ export default function TabCadastros({ refreshKey, onSaved }: Props) {
 
         {/* All data loaded from cache */}
       </div>
+      </>
+      )}
     </div>
   );
 }
