@@ -624,6 +624,7 @@ export default function TabPerfil() {
                   { value: 'suplente', label: '🏛️ Suplente' },
                   { value: 'lideranca', label: '👥 Liderança' },
                   { value: 'coordenador', label: '📋 Coordenador' },
+                  { value: 'fernanda', label: '🩷 Fernanda' },
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -652,6 +653,13 @@ export default function TabPerfil() {
                   placeholder="Ex: Assistente Social, Vereador, Empresário..."
                 />
                 <p className="text-[10px] text-muted-foreground">Essa tag aparece no perfil e nos filtros de cadastros</p>
+              </div>
+            )}
+
+            {createMode === 'livre' && tipoNovo === 'fernanda' && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+                <p className="text-xs font-medium text-foreground">Acesso Fernanda</p>
+                <p className="text-[10px] text-muted-foreground">Esse usuário entra direto na tela exclusiva de Cadastros Fernanda.</p>
               </div>
             )}
 
@@ -947,7 +955,7 @@ export default function TabPerfil() {
       {isAdmin && (
         <div className="section-card">
           <h2 className="section-title flex items-center gap-2">🏙️ Gerenciar Cidades</h2>
-          <div className="flex gap-2 mb-3">
+          <div className="grid grid-cols-4 gap-2 mb-3">
             <input type="text" placeholder="Nome da nova cidade..." id="perfil-nova-cidade"
               className="flex-1 h-10 px-3 bg-card border border-border rounded-xl text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30" />
             <button
