@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, ClipboardList } from 'lucide-react';
 import TabCadastrosFernanda from '@/components/TabCadastrosFernanda';
+import FloatingSupportButton from '@/components/FloatingSupportButton';
 
 export default function HomeFernanda() {
   const { usuario, signOut } = useAuth();
