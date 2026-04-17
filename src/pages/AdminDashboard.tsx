@@ -670,6 +670,44 @@ export default function AdminDashboard() {
 
                       {isExpanded && (
                         <div className="border-t border-border px-3 pb-3 pt-2 space-y-2">
+                          {isFernanda ? (
+                            // ─── Vista exclusiva para usuários tipo "fernanda" ───
+                            <>
+                              <div className="flex items-center justify-between px-1">
+                                <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">🩷 Cadastros Fernanda</span>
+                                <span className="text-[11px] font-bold text-foreground">{uFernanda.length}</span>
+                              </div>
+                              {uFernanda.length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-4">Nenhum cadastro ainda</p>
+                              ) : (
+                                <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+                                  {uFernanda.map(c => (
+                                    <div key={c.id} className="p-3 rounded-xl bg-muted/50 border border-border/50 space-y-1.5">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <p className="text-sm font-semibold text-foreground truncate">{c.nome}</p>
+                                        <span className="text-[10px] text-muted-foreground shrink-0">{new Date(c.criado_em).toLocaleDateString('pt-BR')}</span>
+                                      </div>
+                                      <div className="grid grid-cols-1 gap-1">
+                                        <div className="text-[10px] bg-background rounded px-2 py-1">
+                                          <span className="text-muted-foreground">Telefone:</span>{' '}
+                                          <span className="text-foreground">{c.telefone}</span>
+                                        </div>
+                                        <div className="text-[10px] bg-background rounded px-2 py-1">
+                                          <span className="text-muted-foreground">Cidade:</span>{' '}
+                                          <span className={c.cidade ? 'text-foreground' : 'text-muted-foreground/50 italic'}>{c.cidade || '—'}</span>
+                                        </div>
+                                        <div className="text-[10px] bg-background rounded px-2 py-1">
+                                          <span className="text-muted-foreground">Instagram:</span>{' '}
+                                          <span className={c.instagram ? 'text-foreground' : 'text-muted-foreground/50 italic'}>{c.instagram || '—'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
                           {/* Counts */}
                           <div className="grid grid-cols-3 gap-2">
                             {[
@@ -761,6 +799,8 @@ export default function AdminDashboard() {
                                 });
                               })()}
                             </div>
+                          )}
+                            </>
                           )}
 
                           {/* Export & detail buttons */}
