@@ -15,6 +15,7 @@ export default function HomeFernanda() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <FloatingSupportButton />
       <div className="h-[1.5px] gradient-header shrink-0" />
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border shrink-0">
         <div className="max-w-[672px] mx-auto px-4 py-3 flex items-center justify-between">
