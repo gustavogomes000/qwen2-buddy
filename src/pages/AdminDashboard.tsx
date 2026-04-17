@@ -183,6 +183,7 @@ export default function AdminDashboard() {
   const filteredL = useMemo(() => liderancas.filter(r => dateFilter(r.criado_em)), [liderancas, dateFilter]);
   const filteredE = useMemo(() => eleitores.filter(r => dateFilter(r.criado_em)), [eleitores, dateFilter]);
   const filteredF = useMemo(() => fiscais.filter(r => r.criado_em && dateFilter(r.criado_em)), [fiscais, dateFilter]);
+  const filteredFern = useMemo(() => cadastrosFernanda.filter(r => dateFilter(r.criado_em)), [cadastrosFernanda, dateFilter]);
 
   const totais = useMemo(() => ({
     l: filteredL.length, e: filteredE.length, f: filteredF.length,
@@ -191,21 +192,21 @@ export default function AdminDashboard() {
 
   /* ── Ranking (inclui TODOS os usuários, mesmo com 0 cadastros) ── */
   const rankingUsuarios = useMemo(() => {
-    const map: Record<string, { l: number; e: number; f: number }> = {};
-    // Inicializar todos os usuários (exceto super_admin)
+    const map: Record<string, { l: number; e: number; f: number; fern: number }> = {};
     usuarios.filter(u => u.tipo !== 'super_admin').forEach(u => {
-      map[u.id] = { l: 0, e: 0, f: 0 };
+      map[u.id] = { l: 0, e: 0, f: 0, fern: 0 };
     });
-    filteredL.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0 }; map[r.cadastrado_por].l++; });
-    filteredE.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0 }; map[r.cadastrado_por].e++; });
-    filteredF.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0 }; map[r.cadastrado_por].f++; });
+    filteredL.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].l++; });
+    filteredE.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].e++; });
+    filteredF.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].f++; });
+    filteredFern.forEach(r => { if (!r.cadastrado_por) return; if (!map[r.cadastrado_por]) map[r.cadastrado_por] = { l: 0, e: 0, f: 0, fern: 0 }; map[r.cadastrado_por].fern++; });
     return Object.entries(map)
       .map(([id, stats]) => {
         const u = usuarios.find(u => u.id === id);
-        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, suplente_id: u?.suplente_id || null, total: stats.l + stats.e + stats.f, ...stats };
+        return { id, nome: u?.nome || 'Desconhecido', tipo: u?.tipo || '—', municipio_id: u?.municipio_id || null, suplente_id: u?.suplente_id || null, total: stats.l + stats.e + stats.f + stats.fern, ...stats };
       })
       .sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome));
-  }, [filteredL, filteredE, filteredF, usuarios]);
+  }, [filteredL, filteredE, filteredF, filteredFern, usuarios]);
 
   /* ── Users list ── */
   const filteredUsers = useMemo(() => {
