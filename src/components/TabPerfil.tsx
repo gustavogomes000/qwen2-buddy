@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   LogOut, Shield, User, UserPlus, Loader2, Crown, Users, Eye, Copy, X,
   Pencil, Trash2, Settings, Search, ArrowLeft, KeyRound, EyeOff, ChevronDown,
-  MapPin, Building2, Plus
+  MapPin, Building2, Plus, ClipboardList
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ModulosUsuario from '@/components/ModulosUsuario';
@@ -15,6 +15,7 @@ const tipoLabels: Record<string, string> = {
   coordenador: 'Coordenador',
   suplente: 'Suplente',
   lideranca: 'Liderança',
+  fernanda: 'Fernanda',
 };
 
 const tipoIcons: Record<string, typeof Shield> = {
@@ -22,6 +23,7 @@ const tipoIcons: Record<string, typeof Shield> = {
   coordenador: Shield,
   suplente: User,
   lideranca: Users,
+  fernanda: ClipboardList,
 };
 
 const tipoColors: Record<string, string> = {
@@ -29,6 +31,7 @@ const tipoColors: Record<string, string> = {
   coordenador: 'bg-orange-500/10 text-orange-600',
   suplente: 'bg-blue-500/10 text-blue-600',
   lideranca: 'bg-purple-500/10 text-purple-600',
+  fernanda: 'bg-primary/10 text-primary',
 };
 
 const MODULOS_OPTIONS = [
