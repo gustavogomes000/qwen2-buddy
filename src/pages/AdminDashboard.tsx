@@ -115,6 +115,24 @@ export default function AdminDashboard() {
   const usuarios = (usuariosData || []) as unknown as HierarquiaUsuario[];
   const loading = lLoading || eLoading || fLoading || uLoading;
 
+  // Cadastros Fernanda (tabela isolada – diferente de Lid/Eleit/Fisc)
+  const [cadastrosFernanda, setCadastrosFernanda] = useState<Array<{ id: string; nome: string; telefone: string; cidade: string | null; instagram: string | null; cadastrado_por: string | null; criado_em: string }>>([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+    const load = () => {
+      (supabase as any).from('cadastros_fernanda').select('*').order('criado_em', { ascending: false }).then(({ data }: any) => {
+        if (active && data) setCadastrosFernanda(data);
+      });
+    };
+    load();
+    const channel = supabase
+      .channel('admin_cadastros_fernanda_sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cadastros_fernanda' }, load)
+      .subscribe();
+    return () => { active = false; supabase.removeChannel(channel); };
+  }, [isAdmin]);
+
   // Suplentes map for cargo_disputado tag
   const [suplentesTags, setSuplentesTags] = useState<Record<string, string>>({});
   useEffect(() => {
